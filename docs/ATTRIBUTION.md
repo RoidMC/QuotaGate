@@ -117,6 +117,10 @@ If you ​​materially breach​​ your obligations under this document (e.g.,
 
 These attribution requirements are **integral to the exercise of copyright** under MPL-2.0 Section 2 (Grant of Copyright License). Compliance is **a precondition** for the license grant. Any breach of attribution requirements shall **automatically terminate** all rights granted under MPL-2.0.  
 
+## Disclaimer
+
+QuotaGate is an open-source technical project. RoidMC Studios assumes no responsibility for the actions or conduct of any third party in their use of QuotaGate. This document is a usage and brand protection policy, not a Contributor License Agreement (CLA). Any fraudulent, misleading, or illegal activities conducted by third parties under the name of QuotaGate are unrelated to RoidMC Studios, and all resulting liabilities shall be borne solely by the offending party.
+
 ## Contact Information
 
 For questions regarding these attribution requirements or to request exemptions, please contact:
