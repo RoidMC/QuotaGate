@@ -1,6 +1,6 @@
 {
   "name": "rmc-quotagate-ui",
-  "description": "RoidMC QuotaGate UI",
+  "description": "RoidMC QuotaGate UI | Powered by Horizon UI",
   "packageManager": "pnpm@11.1.2",
   "version": "0.0.1-Alpha",
   "type": "module",
@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/roidmc/kexcore"
+    "url": "git://github.com/roidmc/quotagate"
   },
   "scripts": {
     "build": "nuxt build",
@@ -37,6 +37,7 @@
     "@unocss/nuxt": "^66.7.2",
     "animejs": "^4.4.1",
     "dotenv": "^17.4.2",
+    "echarts": "^6.1.0",
     "js-sha3": "^0.9.3",
     "nuxt": "^4.4.8",
     "pinia": "^3.0.4",
