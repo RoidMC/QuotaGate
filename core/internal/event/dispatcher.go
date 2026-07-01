@@ -663,7 +663,7 @@ func (d *Dispatcher) DispatchWithRetry(ctx context.Context, event Event, url str
 		}
 
 		if !isRetryable(lastResult) {
-			slog.Info("[quotagate/event] non-retryable error (status %d), not retrying", lastResult.StatusCode)
+			slog.Info("[quotagate/event] non-retryable error, not retrying", "status_code", lastResult.StatusCode)
 			return lastResult
 		}
 
@@ -673,11 +673,11 @@ func (d *Dispatcher) DispatchWithRetry(ctx context.Context, event Event, url str
 			if lastResult.StatusCode == http.StatusTooManyRequests {
 				if ra := parseRetryAfter(lastResult.rawRetryAfter, time.Now()); ra > 0 {
 					backoff = ra
-					slog.Info("[quotagate/event] attempt %d got 429, using Retry-After %v", attempt+1, "retryAfter", backoff)
+					slog.Info("[quotagate/event] got 429, using Retry-After", "attempt", attempt+1, "retry_after", backoff)
 				}
 			}
 
-			slog.Info("[quotagate/event] attempt %d failed (status %d), retrying in %v", attempt+1, lastResult.StatusCode, backoff)
+			slog.Info("[quotagate/event] retrying failed dispatch", "attempt", attempt+1, "status_code", lastResult.StatusCode, "backoff", backoff)
 
 			select {
 			case <-ctx.Done():
@@ -693,7 +693,7 @@ func (d *Dispatcher) DispatchWithRetry(ctx context.Context, event Event, url str
 		}
 	}
 
-	slog.Info("[quotagate/event] all %d attempts exhausted, last status %d", totalAttempts, lastResult.StatusCode)
+	slog.Info("[quotagate/event] all attempts exhausted", "attempts", totalAttempts, "last_status_code", lastResult.StatusCode)
 	return lastResult
 }
 
