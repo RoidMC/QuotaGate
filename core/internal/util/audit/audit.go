@@ -1,6 +1,9 @@
 package audit
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"net"
 	"strings"
 )
@@ -15,10 +18,13 @@ type AuditLogInput struct {
 	Result     string
 	Severity   string
 	TenantID   string
+	RequestID  string
 	IP         string
 	UserAgent  string
 	Message    string
 	Detail     string
+	Before     string
+	After      string
 }
 
 // SanitizeResult holds the sanitized audit log fields.
@@ -52,11 +58,34 @@ func SanitizeAuditLog(in AuditLogInput) SanitizeResult {
 		Result:     sanitizeResult(in.Result),
 		Severity:   sanitizeSeverity(in.Severity),
 		TenantID:   sanitizeTenantID(in.TenantID),
+		RequestID:  sanitizeID(in.RequestID),
 		IP:         sanitizeIP(in.IP),
 		UserAgent:  sanitizeUserAgent(in.UserAgent),
 		Message:    sanitizeMessage(in.Message),
 		Detail:     sanitizeDetail(in.Detail),
+		Before:     sanitizeDetail(in.Before),
+		After:      sanitizeDetail(in.After),
 	}
+}
+
+// ComputeSignature calculates HMAC-SHA256 signature for audit log integrity.
+// The signed content is a canonical concatenation of key fields to detect tampering.
+// Format: action|actor_id|target_id|target_type|result|tenant_id|request_id|message
+func ComputeSignature(entry AuditLogInput, secret string) string {
+	canonical := strings.Join([]string{
+		entry.Action,
+		entry.ActorID,
+		entry.TargetID,
+		entry.TargetType,
+		entry.Result,
+		entry.TenantID,
+		entry.RequestID,
+		entry.Message,
+	}, "|")
+
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(canonical))
+	return hex.EncodeToString(mac.Sum(nil))
 }
 
 // sanitizeMessage sanitizes human-readable audit message (256 chars max).
