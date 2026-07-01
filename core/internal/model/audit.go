@@ -40,12 +40,14 @@ const (
 	TargetTypeRole        = "role"
 	TargetTypeIdentity    = "identity"
 	// QuotaGate Event
-	TargetTypeChannel     = "channel" // 渠道启用/禁用/故障
-	TargetTypeToken       = "token"   // API Key 创建/吊销
-	TargetTypeModel       = "model"   // 模型路由变更
-	TargetTypeQuota       = "quota"   // 配额变更
-	TargetTypeBilling     = "billing" // 预扣费/结算/退款
-	TargetTypeRelay       = "relay"   // 请求转发成功/失败
+	TargetTypeChannel = "channel" // 渠道启用/禁用/故障
+	TargetTypeToken   = "token"   // API Key 创建/吊销
+	TargetTypeModel   = "model"   // 模型路由变更
+	TargetTypeQuota   = "quota"   // 配额变更
+	TargetTypeBilling = "billing" // 预扣费/结算/退款
+	TargetTypeRelay   = "relay"   // 请求转发成功/失败
+	TargetTypePlan    = "plan"    // 套餐创建/修改/删除
+	TargetTypeConfig  = "config"  // 系统配置变更
 )
 
 const (
