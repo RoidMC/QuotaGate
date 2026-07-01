@@ -28,13 +28,22 @@ type Plan struct {
 	AllowBalancePay     *bool `gorm:"column:allow_balance_pay" json:"allow_balance_pay,omitempty"`                  // nil = true
 	AllowWalletOverflow *bool `gorm:"column:allow_wallet_overflow" json:"allow_wallet_overflow,omitempty"`          // nil = true; allow wallet fallback after quota exhausted
 	// User group transitions
-	UpgradeGroup   string    `gorm:"column:upgrade_group;size:64;default:''" json:"upgrade_group"`     // upgrade user group on purchase (empty = no change)
-	DowngradeGroup string    `gorm:"column:downgrade_group;size:64;default:''" json:"downgrade_group"` // downgrade target on expiry (empty = revert to prev group)
-	IncludedModels string    `gorm:"column:included_models;type:text" json:"included_models"`          // JSON array of model IDs
-	Features       string    `gorm:"type:text" json:"features"`                                        // JSON object of feature flags
-	Active         bool      `gorm:"default:true;not null" json:"active"`
-	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt      time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+	UpgradeGroup   string `gorm:"column:upgrade_group;size:64;default:''" json:"upgrade_group"`     // upgrade user group on purchase (empty = no change)
+	DowngradeGroup string `gorm:"column:downgrade_group;size:64;default:''" json:"downgrade_group"` // downgrade target on expiry (empty = revert to prev group)
+	// Refund policy. Without an explicit field, service code would branch on
+	// Plan.Type, which couples refund behavior to plan type and breaks the
+	// open-closed principle when new plan types are added.
+	//   none:            non-refundable (enterprise contracts, promotional)
+	//   full:            full refund within RefundWindowSeconds (7-day no-questions)
+	//   prorated_quota:  refund × (QuotaTotal - QuotaUsed) / QuotaTotal (token plans)
+	//   prorated_time:   refund × (ExpiresAt - now) / (ExpiresAt - StartedAt) (unlimited plans)
+	RefundPolicy        string    `gorm:"column:refund_policy;size:24;not null;default:'none'" json:"refund_policy"`
+	RefundWindowSeconds int64     `gorm:"column:refund_window_seconds;not null;default:0" json:"refund_window_seconds"` // 0 = no time limit; only meaningful for "full"
+	IncludedModels      string    `gorm:"column:included_models;type:text" json:"included_models"`                      // JSON array of model IDs
+	Features            string    `gorm:"type:text" json:"features"`                                                    // JSON object of feature flags
+	Active              bool      `gorm:"default:true;not null" json:"active"`
+	CreatedAt           time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt           time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 func (Plan) TableName() string { return "billing_plans" }
@@ -58,11 +67,21 @@ type Subscription struct {
 	PaymentMethod string     `gorm:"column:payment_method;size:32" json:"payment_method"`
 	// Source: how this subscription was created (order/admin/grant)
 	Source string `gorm:"column:source;size:32;not null;default:'order'" json:"source"`
-	// Price snapshot locked at purchase time. Plans may change price later;
-	// these fields preserve the originally purchased terms for the subscription's
-	// lifetime so renewals and refunds charge the correct amount.
+	// Price snapshot locked at the original purchase. Used for:
+	//   1. snapshot-mode renewals (RenewalPriceMode == "snapshot")
+	//   2. Audit / display ("you originally paid 99")
+	// NOT used for refunds. Refunds always reverse the actual Transaction amount
+	// that was charged at the time (e.g. a 49 renewal refunds 49, not 99).
 	SnapshotPrice    int64  `gorm:"column:snapshot_price;not null;default:0" json:"snapshot_price"`
 	SnapshotCurrency string `gorm:"column:snapshot_currency;size:8;not null;default:'CNY'" json:"snapshot_currency"`
+	// Renewal pricing strategy. Without this, AutoRenew would always charge
+	// SnapshotPrice — locking out users from official price drops and preventing
+	// discount-based retention campaigns.
+	//   snapshot: charge SnapshotPrice (enterprise contracts, locked terms)
+	//   current:  charge Plan.Price at renewal time (OpenAI/Anthropic-style)
+	//   discount: charge Plan.Price * RenewalDiscountRate (loyalty retention)
+	RenewalPriceMode    string   `gorm:"column:renewal_price_mode;size:16;not null;default:'current'" json:"renewal_price_mode"`
+	RenewalDiscountRate *float64 `gorm:"column:renewal_discount_rate" json:"renewal_discount_rate,omitempty"` // 0-1, only used when RenewalPriceMode == "discount"
 	// User group transitions (snapshotted from plan at purchase time)
 	UpgradeGroup   string `gorm:"column:upgrade_group;size:64;default:''" json:"upgrade_group"`
 	PrevUserGroup  string `gorm:"column:prev_user_group;size:64;default:''" json:"prev_user_group"`
@@ -100,4 +119,15 @@ const (
 	SubscriptionSourceOrder = "order"
 	SubscriptionSourceAdmin = "admin"
 	SubscriptionSourceGrant = "grant"
+
+	// Renewal pricing modes
+	RenewalPriceModeSnapshot = "snapshot" // charge SnapshotPrice (locked terms)
+	RenewalPriceModeCurrent  = "current"  // charge Plan.Price at renewal (default, transparent)
+	RenewalPriceModeDiscount = "discount" // charge Plan.Price * RenewalDiscountRate (retention)
+
+	// Refund policies
+	RefundPolicyNone          = "none"           // non-refundable
+	RefundPolicyFull          = "full"           // full refund within RefundWindowSeconds
+	RefundPolicyProratedQuota = "prorated_quota" // refund × (QuotaTotal - QuotaUsed) / QuotaTotal
+	RefundPolicyProratedTime  = "prorated_time"  // refund × remaining_time / total_time
 )
