@@ -58,6 +58,11 @@ type Subscription struct {
 	PaymentMethod string     `gorm:"column:payment_method;size:32" json:"payment_method"`
 	// Source: how this subscription was created (order/admin/grant)
 	Source string `gorm:"column:source;size:32;not null;default:'order'" json:"source"`
+	// Price snapshot locked at purchase time. Plans may change price later;
+	// these fields preserve the originally purchased terms for the subscription's
+	// lifetime so renewals and refunds charge the correct amount.
+	SnapshotPrice    int64  `gorm:"column:snapshot_price;not null;default:0" json:"snapshot_price"`
+	SnapshotCurrency string `gorm:"column:snapshot_currency;size:8;not null;default:'CNY'" json:"snapshot_currency"`
 	// User group transitions (snapshotted from plan at purchase time)
 	UpgradeGroup   string `gorm:"column:upgrade_group;size:64;default:''" json:"upgrade_group"`
 	PrevUserGroup  string `gorm:"column:prev_user_group;size:64;default:''" json:"prev_user_group"`
