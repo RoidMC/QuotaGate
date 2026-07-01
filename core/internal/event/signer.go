@@ -80,17 +80,17 @@ var algorithmRegistry = map[HashAlgorithm]algorithmInfo{
 var (
 	// ErrInvalidSignature is returned when the computed signature does not match
 	// the one provided in the header.
-	ErrInvalidSignature = errors.New("kexcore/event: invalid webhook signature")
+	ErrInvalidSignature = errors.New("quotagate/event: invalid webhook signature")
 	// ErrEmptySecret is returned when an empty secret is passed to Sign or Verify.
-	ErrEmptySecret = errors.New("kexcore/event: secret must not be empty")
+	ErrEmptySecret = errors.New("quotagate/event: secret must not be empty")
 	// ErrTimestampExpired is returned when the webhook timestamp falls outside
 	// the allowed tolerance window.
-	ErrTimestampExpired = errors.New("kexcore/event: webhook timestamp outside tolerance")
+	ErrTimestampExpired = errors.New("quotagate/event: webhook timestamp outside tolerance")
 	// ErrMalformedHeader is returned when the signature header cannot be parsed.
-	ErrMalformedHeader = errors.New("kexcore/event: malformed signature header")
+	ErrMalformedHeader = errors.New("quotagate/event: malformed signature header")
 	// ErrUnknownAlgorithm is returned when an unsupported HashAlgorithm is
 	// passed to NewSigner.
-	ErrUnknownAlgorithm = errors.New("kexcore/event: unknown hash algorithm")
+	ErrUnknownAlgorithm = errors.New("quotagate/event: unknown hash algorithm")
 )
 
 // SignatureResult holds the outputs of a signing operation.
