@@ -29,7 +29,7 @@ var defaultPolicies = [][]string{
 	{"user", "/api/topup", "GET"},
 	{"user", "/api/topup", "POST"},
 
-	// Admin IAM
+	// Admin general management
 	{"admin", "/api/users", "GET"},
 	{"admin", "/api/users", "POST"},
 	{"admin", "/api/users/{id}", "GET"},
