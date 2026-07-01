@@ -100,7 +100,7 @@ func WithHTTPClient(client *http.Client) DispatcherOption {
 
 // WithUserAgent sets a custom User-Agent header for all outgoing requests.
 //
-// If not provided, defaults to "quotagate-Webhook/1.0".
+// If not provided, defaults to "Quotagate-Webhook/1.0".
 func WithUserAgent(userAgent string) DispatcherOption {
 	return func(d *Dispatcher) {
 		d.userAgent = userAgent
@@ -342,7 +342,7 @@ const (
 	// defaultUserAgent is the User-Agent header value sent with every
 	// webhook POST request. The version segment can be updated alongside
 	// releases to aid server-side analytics.
-	defaultUserAgent = "quotagate-Webhook/1.0"
+	defaultUserAgent = "Quotagate-Webhook/1.0"
 
 	// defaultMaxRespBodySize is the default maximum response body size (1 MB)
 	// read from webhook endpoints. Responses exceeding this limit are truncated
