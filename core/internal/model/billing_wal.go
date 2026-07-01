@@ -8,7 +8,7 @@ import "time"
 type WALRow struct {
 	ID             int64      `json:"id" gorm:"primaryKey;autoIncrement"`
 	RequestID      string     `json:"request_id" gorm:"type:varchar(64);uniqueIndex;not null"`
-	UserID         int        `json:"user_id" gorm:"index;not null"`
+	UserID         string     `json:"user_id" gorm:"type:varchar(36);index;not null"`
 	SubscriptionID *int64     `json:"subscription_id,omitempty" gorm:"index"`
 	PreConsumed    int64      `json:"pre_consumed" gorm:"not null"`
 	ActualConsumed int64      `json:"actual_consumed" gorm:"default:0"`
