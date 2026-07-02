@@ -19,3 +19,10 @@ type CompensationRow struct {
 }
 
 func (CompensationRow) TableName() string { return "billing_compensation" }
+
+const (
+	CompensationStatusPending    = "pending"
+	CompensationStatusProcessing = "processing"
+	CompensationStatusCompleted  = "completed"
+	CompensationStatusFailed     = "failed"
+)

@@ -16,7 +16,7 @@ type WALRow struct {
 	// preserves identity for audit even after the user record is gone.
 	UserSnapshotName       string     `json:"user_snapshot_name" gorm:"type:varchar(128)"`
 	UserSnapshotIdentifier string     `json:"user_snapshot_identifier" gorm:"type:varchar(256)"` // email / phone / SAML UID
-	SubscriptionID         *int64     `json:"subscription_id,omitempty" gorm:"index"`
+	SubscriptionID         *string    `json:"subscription_id,omitempty" gorm:"column:subscription_id;size:36;index"`
 	PreConsumed            int64      `json:"pre_consumed" gorm:"not null"`
 	ActualConsumed         int64      `json:"actual_consumed" gorm:"default:0"`
 	Status                 string     `json:"status" gorm:"type:varchar(32);not null;default:'pending';index"`
@@ -37,4 +37,7 @@ const (
 	WALStatusRefunded  = "refunded"
 	WALStatusFailed    = "failed"
 	WALStatusCancelled = "cancelled" // logical deletion; never physically dropped
+
+	WALSourceWallet       = "wallet"
+	WALSourceSubscription = "subscription"
 )

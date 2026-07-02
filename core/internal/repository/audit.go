@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"log/slog"
 	"time"
 
@@ -35,28 +36,28 @@ func (r *AuditLogRepository) AutoMigrate() error {
 	return r.db.AutoMigrate(&model.AuditLog{})
 }
 
-func (r *AuditLogRepository) Create(entry *model.AuditLog) error {
-	if err := r.db.Create(entry).Error; err != nil {
+func (r *AuditLogRepository) Create(ctx context.Context, entry *model.AuditLog) error {
+	if err := r.db.WithContext(ctx).Create(entry).Error; err != nil {
 		slog.Warn("failed to create audit log", "action", entry.Action, "actor_id", entry.ActorID, "error", err)
 		return err
 	}
 	return nil
 }
 
-func (r *AuditLogRepository) BatchCreate(entries []*model.AuditLog) error {
+func (r *AuditLogRepository) BatchCreate(ctx context.Context, entries []*model.AuditLog) error {
 	if len(entries) == 0 {
 		return nil
 	}
-	if err := r.db.CreateInBatches(entries, 100).Error; err != nil {
+	if err := r.db.WithContext(ctx).CreateInBatches(entries, 100).Error; err != nil {
 		slog.Warn("failed to batch create audit logs", "count", len(entries), "error", err)
 		return err
 	}
 	return nil
 }
 
-func (r *AuditLogRepository) ListByFilter(tenantID string, filter AuditFilter, limit, offset int) ([]model.AuditLog, error) {
+func (r *AuditLogRepository) ListByFilter(ctx context.Context, tenantID string, filter AuditFilter, limit, offset int) ([]model.AuditLog, error) {
 	var logs []model.AuditLog
-	query := r.db.Where("tenant_id = ?", tenantID)
+	query := r.db.WithContext(ctx).Where("tenant_id = ?", tenantID)
 
 	if filter.ActorID != "" {
 		query = query.Where("actor_id = ?", filter.ActorID)
@@ -89,9 +90,9 @@ func (r *AuditLogRepository) ListByFilter(tenantID string, filter AuditFilter, l
 	return logs, result.Error
 }
 
-func (r *AuditLogRepository) CountByFilter(tenantID string, filter AuditFilter) (int64, error) {
+func (r *AuditLogRepository) CountByFilter(ctx context.Context, tenantID string, filter AuditFilter) (int64, error) {
 	var count int64
-	query := r.db.Model(&model.AuditLog{}).Where("tenant_id = ?", tenantID)
+	query := r.db.WithContext(ctx).Model(&model.AuditLog{}).Where("tenant_id = ?", tenantID)
 
 	if filter.ActorID != "" {
 		query = query.Where("actor_id = ?", filter.ActorID)
