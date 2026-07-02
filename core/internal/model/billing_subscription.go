@@ -50,14 +50,18 @@ func (Plan) TableName() string { return "billing_plans" }
 
 // Subscription links a user (or tenant) to a plan with quota tracking and renewal state.
 type Subscription struct {
-	ID           string     `gorm:"primaryKey;size:36" json:"id"`
-	TenantID     string     `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
-	UserID       string     `gorm:"column:user_id;size:36;index;not null" json:"user_id"`
-	PlanID       string     `gorm:"column:plan_id;size:36;index;not null" json:"plan_id"`
-	Status       string     `gorm:"size:16;not null;default:'active';index" json:"status"`
-	QuotaTotal   int64      `gorm:"column:quota_total;not null;default:0" json:"quota_total"`
-	QuotaUsed    int64      `gorm:"column:quota_used;not null;default:0" json:"quota_used"`
-	QuotaResetAt *time.Time `gorm:"column:quota_reset_at" json:"quota_reset_at,omitempty"` // legacy single reset timestamp; prefer LastResetTime/NextResetTime
+	ID       string `gorm:"primaryKey;size:36" json:"id"`
+	TenantID string `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
+	UserID   string `gorm:"column:user_id;size:36;index;not null" json:"user_id"`
+	// User snapshot at subscription time.  IAM deletes users hard, so this snapshot
+	// preserves identity for audit even after the user record is gone.
+	UserSnapshotName       string     `gorm:"column:user_snapshot_name;size:128" json:"user_snapshot_name"`
+	UserSnapshotIdentifier string     `gorm:"column:user_snapshot_identifier;size:256" json:"user_snapshot_identifier"` // email / phone / SAML UID
+	PlanID                 string     `gorm:"column:plan_id;size:36;index;not null" json:"plan_id"`
+	Status                 string     `gorm:"size:16;not null;default:'active';index" json:"status"`
+	QuotaTotal             int64      `gorm:"column:quota_total;not null;default:0" json:"quota_total"`
+	QuotaUsed              int64      `gorm:"column:quota_used;not null;default:0" json:"quota_used"`
+	QuotaResetAt           *time.Time `gorm:"column:quota_reset_at" json:"quota_reset_at,omitempty"` // legacy single reset timestamp; prefer LastResetTime/NextResetTime
 	// Reset tracking (mirrors plan's reset period; advanced at runtime)
 	LastResetTime *time.Time `gorm:"column:last_reset_time;index" json:"last_reset_time,omitempty"`
 	NextResetTime *time.Time `gorm:"column:next_reset_time;index" json:"next_reset_time,omitempty"`

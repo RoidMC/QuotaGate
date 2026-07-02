@@ -9,11 +9,15 @@ import "time"
 // EU VAT invoices), the header carries tax fields and a status flow that
 // supports draft -> issue -> send -> pay -> write_off / dispute / refund.
 type Invoice struct {
-	ID        string `gorm:"primaryKey;size:36" json:"id"`
-	TenantID  string `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
-	UserID    string `gorm:"column:user_id;size:36;index;not null" json:"user_id"`
-	InvoiceNo string `gorm:"column:invoice_no;size:64;uniqueIndex;not null" json:"invoice_no"`
-	Type      string `gorm:"size:32;not null;default:'consumption'" json:"type"` // consumption / recharge / subscription
+	ID       string `gorm:"primaryKey;size:36" json:"id"`
+	TenantID string `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
+	UserID   string `gorm:"column:user_id;size:36;index;not null" json:"user_id"`
+	// User snapshot at invoice time.  IAM deletes users hard, so this snapshot
+	// preserves identity for audit even after the user record is gone.
+	UserSnapshotName       string `gorm:"column:user_snapshot_name;size:128" json:"user_snapshot_name"`
+	UserSnapshotIdentifier string `gorm:"column:user_snapshot_identifier;size:256" json:"user_snapshot_identifier"` // email / phone / SAML UID
+	InvoiceNo              string `gorm:"column:invoice_no;size:64;uniqueIndex;not null" json:"invoice_no"`
+	Type                   string `gorm:"size:32;not null;default:'consumption'" json:"type"` // consumption / recharge / subscription
 	// Period covered by this invoice
 	PeriodStart time.Time `gorm:"column:period_start;not null" json:"period_start"`
 	PeriodEnd   time.Time `gorm:"column:period_end;not null" json:"period_end"`

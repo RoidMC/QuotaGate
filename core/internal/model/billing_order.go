@@ -34,8 +34,12 @@ type Order struct {
 	Status            string     `gorm:"size:16;not null;default:'pending';index" json:"status"`
 	SettledAt         *time.Time `gorm:"column:settled_at" json:"settled_at,omitempty"`
 	ErrorMessage      string     `gorm:"column:error_message;type:text" json:"error_message"`
-	CreatedAt         time.Time  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt         time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+	// User snapshot at billing time.  IAM deletes users hard, so this snapshot
+	// preserves identity for audit even after the user record is gone.
+	UserSnapshotName       string    `gorm:"column:user_snapshot_name;size:128" json:"user_snapshot_name"`
+	UserSnapshotIdentifier string    `gorm:"column:user_snapshot_identifier;size:256" json:"user_snapshot_identifier"` // email / phone / SAML UID
+	CreatedAt              time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt              time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 func (Order) TableName() string { return "billing_orders" }
