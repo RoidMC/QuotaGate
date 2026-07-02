@@ -31,5 +31,5 @@ g = _, _
 e = some(where (p.eft == allow))
 
 [matchers]
-m = eval(p.sub_rule) && r.obj == p.obj && r.act == p.act
+m = eval(p.sub_rule) && keyMatch3(r.obj, p.obj) && r.act == p.act
 `
