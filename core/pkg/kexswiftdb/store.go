@@ -11,6 +11,18 @@ import (
 // Prefix is an arbitrary caller-defined key prefix, replacing the old fixed Namespace enum.
 type Prefix string
 
+// Common namespaces. Callers may compose sub-namespaces by concatenating, e.g.
+// Prefix(PrefixAuth + ":revoke").
+const (
+	PrefixAuth      Prefix = "auth"
+	PrefixBilling   Prefix = "billing"
+	PrefixSession   Prefix = "session"
+	PrefixRateLimit Prefix = "ratelimit"
+	PrefixWebhook   Prefix = "webhook"
+	PrefixAudit     Prefix = "audit"
+	PrefixAnalytics Prefix = "analytics"
+)
+
 type StoreStats struct {
 	Namespace string `json:"namespace"`
 	KeyCount  int    `json:"key_count"`
