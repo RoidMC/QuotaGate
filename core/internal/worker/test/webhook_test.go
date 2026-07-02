@@ -3,6 +3,7 @@ package worker_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -260,14 +261,13 @@ func TestWebhookWorkerDispatchesMultipleEntries(t *testing.T) {
 
 	w.Start()
 
-	evt := event.Event{ID: "evt-batch", Type: "test"}
-	payload, _ := json.Marshal(evt)
-
 	for i := 0; i < 3; i++ {
+		evt := event.Event{ID: fmt.Sprintf("evt-batch-%d", i), Type: "test"}
+		payload, _ := json.Marshal(evt)
 		entry := model.WebhookOutbox{
 			ID:             random.MustUUIDString(),
 			EventType:      "test",
-			EventID:        "evt-batch",
+			EventID:        evt.ID,
 			TenantID:       "tenant-1",
 			WebhookID:      "wh-1",
 			URL:            server.URL,
@@ -462,12 +462,12 @@ func TestWebhookWorkerAdaptivePolling(t *testing.T) {
 func TestWebhookWorkerConcurrentStartStop(t *testing.T) {
 	db := setupWorkerTestDB(t)
 	repo := repository.NewWebhookRepository(db)
-	w := worker.NewWebhookWorker(repo, newTestDispatcher(t),
-		worker.WithMinInterval(50*time.Millisecond),
-		worker.WithMaxInterval(100*time.Millisecond),
-	)
 
 	for i := 0; i < 5; i++ {
+		w := worker.NewWebhookWorker(repo, newTestDispatcher(t),
+			worker.WithMinInterval(50*time.Millisecond),
+			worker.WithMaxInterval(100*time.Millisecond),
+		)
 		w.Start()
 		time.Sleep(10 * time.Millisecond)
 		w.Stop()
@@ -522,13 +522,76 @@ func TestWebhookWorkerMetricsZero(t *testing.T) {
 	}
 }
 
+func TestWebhookWorkerReclaimsStaleProcessing(t *testing.T) {
+	var callCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&callCount, 1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	db := setupWorkerTestDB(t)
+	repo := repository.NewWebhookRepository(db)
+	w := worker.NewWebhookWorker(repo, newTestDispatcher(t),
+		worker.WithMinInterval(10*time.Millisecond),
+		worker.WithMaxInterval(100*time.Millisecond),
+	)
+
+	evt := event.Event{ID: "evt-stale", Type: "test"}
+	payload, _ := json.Marshal(evt)
+
+	entry := model.WebhookOutbox{
+		ID:             random.MustUUIDString(),
+		EventType:      "test",
+		EventID:        "evt-stale",
+		TenantID:       "tenant-1",
+		WebhookID:      "wh-1",
+		URL:            server.URL,
+		Secret:         "",
+		Payload:        string(payload),
+		Status:         model.OutboxStatusProcessing,
+		Attempt:        1,
+		MaxAttempts:    3,
+		TimeoutSeconds: 5,
+		NextAttemptAt:  time.Now(),
+		UpdatedAt:      time.Now().Add(-10 * time.Minute),
+	}
+	if err := db.Create(&entry).Error; err != nil {
+		t.Fatalf("failed to create stale processing entry: %v", err)
+	}
+
+	w.Start()
+	waitForOutboxStatus(t, db, entry.ID, model.OutboxStatusCompleted, 3*time.Second)
+	w.Stop()
+
+	if n := atomic.LoadInt32(&callCount); n != 1 {
+		t.Errorf("expected 1 HTTP call after reclaim, got %d", n)
+	}
+}
+
+func TestWebhookWorkerStartPanicsOnDoubleStart(t *testing.T) {
+	db := setupWorkerTestDB(t)
+	repo := repository.NewWebhookRepository(db)
+	w := worker.NewWebhookWorker(repo, newTestDispatcher(t))
+
+	w.Start()
+	defer w.Stop()
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("expected panic on double Start")
+		}
+	}()
+	w.Start()
+}
+
 func TestWebhookWorkerOptions(t *testing.T) {
 	db := setupWorkerTestDB(t)
 	repo := repository.NewWebhookRepository(db)
 	w := worker.NewWebhookWorker(repo, newTestDispatcher(t),
 		worker.WithMinInterval(1*time.Second),
 		worker.WithMaxInterval(30*time.Second),
-		worker.WithBatchSize(100),
+		worker.WithWorkers(2),
 		worker.WithDLQCheckInterval(1*time.Minute),
 		worker.WithDLQAlertThreshold(500),
 	)
@@ -589,7 +652,7 @@ func TestReplayDeadBatch(t *testing.T) {
 		entry := model.WebhookOutbox{
 			ID:             random.MustUUIDString(),
 			EventType:      "test",
-			EventID:        "evt-batch-replay",
+			EventID:        fmt.Sprintf("evt-batch-replay-%d", i),
 			TenantID:       "tenant-1",
 			WebhookID:      "wh-1",
 			URL:            "https://example.com/webhook",

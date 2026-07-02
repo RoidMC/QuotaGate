@@ -1,4 +1,4 @@
-﻿package event_test
+package event_test
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func TestDispatcherDispatch(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 
 	evt := event.Event{
 		ID:   "evt-1",
@@ -125,7 +125,7 @@ func TestDispatcherWithSM3Signer(t *testing.T) {
 
 func TestDispatcherSignerMethod(t *testing.T) {
 	t.Run("default dispatcher uses SHA256 signer", func(t *testing.T) {
-		d := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		d := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		if d.Signer().Algorithm() != event.HashSHA256 {
 			t.Errorf("expected SHA256, got %s", d.Signer().Algorithm())
 		}
@@ -153,7 +153,7 @@ func TestDispatcherNoSecret(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
@@ -175,7 +175,7 @@ func TestDispatcherServerError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
@@ -195,7 +195,7 @@ func TestDispatcherTimeout(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(100 * time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(100*time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
 
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 1*time.Second)
@@ -212,7 +212,7 @@ func TestDispatcherTimeout(t *testing.T) {
 }
 
 func TestDispatcherInvalidURL(t *testing.T) {
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, "http://invalid.local:9999/nonexistent", "", 1*time.Second)
@@ -239,7 +239,7 @@ func TestDispatcherContentType(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -265,7 +265,7 @@ func TestDispatcherUserAgent(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -275,8 +275,8 @@ func TestDispatcherUserAgent(t *testing.T) {
 		t.Fatal("server did not receive request")
 	}
 
-	if !strings.HasPrefix(userAgent, "quotagate-Webhook/") {
-		t.Errorf("expected User-Agent starting with quotagate-Webhook/, got %s", userAgent)
+	if !strings.HasPrefix(userAgent, "Quotagate-Webhook/") {
+		t.Errorf("expected User-Agent starting with Quotagate-Webhook/, got %s", userAgent)
 	}
 }
 
@@ -287,7 +287,7 @@ func TestDispatcherDispatchWithRetry(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 3)
 
@@ -312,7 +312,7 @@ func TestDispatcherDispatchWithRetry(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 3)
 
@@ -336,7 +336,7 @@ func TestDispatcherDispatchWithRetry(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 2)
 
@@ -359,7 +359,7 @@ func TestDispatcherDispatchWithRetry(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 0)
 
@@ -383,7 +383,7 @@ func TestDispatcherDispatchWithRetry(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 2)
 
@@ -406,7 +406,7 @@ func TestDispatcherDispatchWithRetry(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 
 		start := time.Now()
@@ -443,7 +443,7 @@ func TestDispatcherResponseBodyReadError(t *testing.T) {
 		conn.Close()
 	}()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, "http://"+addr, "", 5*time.Second)
 
@@ -488,7 +488,7 @@ func TestDispatcherVariousStatusCodes(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+			dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 			evt := event.Event{ID: "evt-1", Type: "test"}
 			result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -511,7 +511,7 @@ func TestDispatcherZeroTimeout(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 0*time.Second)
@@ -534,7 +534,7 @@ func TestDispatchErrorCode(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -544,7 +544,7 @@ func TestDispatchErrorCode(t *testing.T) {
 	})
 
 	t.Run("network error returns ErrCodeRequest", func(t *testing.T) {
-		dispatcher := event.NewDispatcher(100 * time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(100*time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.Dispatch(context.Background(), evt, "http://127.0.0.1:1/fail", "", 1*time.Second)
 
@@ -572,7 +572,7 @@ func TestDispatchErrorCode(t *testing.T) {
 			conn.Close()
 		}()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.Dispatch(context.Background(), evt, "http://"+l.Addr().String(), "", 5*time.Second)
 
@@ -603,7 +603,7 @@ func TestRetryPolicy4xxNotRetried(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+			dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 			evt := event.Event{ID: "evt-1", Type: "test"}
 			result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 3)
 
@@ -640,7 +640,7 @@ func TestRetryPolicy5xxRetried(t *testing.T) {
 			}))
 			defer server.Close()
 
-			dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+			dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 			evt := event.Event{ID: "evt-1", Type: "test"}
 			result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 2)
 
@@ -659,7 +659,7 @@ func TestRetryPolicy5xxRetried(t *testing.T) {
 
 func TestRetryPolicyTransportErrorRetried(t *testing.T) {
 	var attempts int32
-	dispatcher := event.NewDispatcher(100 * time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(100*time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 
 	result := dispatcher.DispatchWithRetry(context.Background(), evt, "http://127.0.0.1:1/fail", "", 1*time.Second, 2)
@@ -688,7 +688,7 @@ func TestRetryContextCancellation(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 
 		start := time.Now()
@@ -713,7 +713,7 @@ func TestRetryContextCancellation(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 
 		start := time.Now()
@@ -751,7 +751,7 @@ func TestRetryContextCancellation(t *testing.T) {
 			cancel()
 		}()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(ctx, evt, server.URL, "", 5*time.Second, 5)
 
@@ -774,7 +774,7 @@ func TestRetryAttemptsField(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 5)
 
@@ -789,7 +789,7 @@ func TestRetryAttemptsField(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 5)
 
@@ -804,7 +804,7 @@ func TestRetryAttemptsField(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 3)
 
@@ -827,7 +827,7 @@ func TestRetryRecoveryOn5xx(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 5)
 
@@ -860,7 +860,7 @@ func TestRetry429RespectsRetryAfter(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-429", Type: "test"}
 	result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 3)
 
@@ -891,7 +891,7 @@ func TestRetry429WithoutRetryAfterHeader(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-429-nora", Type: "test"}
 
 	start := time.Now()
@@ -915,7 +915,7 @@ func TestRetryNegativeMaxRetries(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, -1)
 
@@ -937,7 +937,7 @@ func TestDispatchContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	dispatcher := event.NewDispatcher(10 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(10*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(ctx, evt, server.URL, "", 0*time.Second)
 
@@ -953,7 +953,7 @@ func TestDispatchCancelledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(ctx, evt, "http://127.0.0.1:1/fail", "", 1*time.Second)
 
@@ -969,7 +969,7 @@ func TestDispatchSuccessResponseWithBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -988,7 +988,7 @@ func TestDispatchErrorResponseWithBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -1017,7 +1017,7 @@ func TestDispatchWithSigning(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-signed", Type: "user.login", Data: "test-data"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "my-secret-key", 5*time.Second)
 
@@ -1053,7 +1053,7 @@ func TestDispatchWrongSecretFailsVerification(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "correct-secret", 5*time.Second)
 
@@ -1084,7 +1084,7 @@ func TestDispatchHTTPMethod(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -1106,7 +1106,7 @@ func TestDispatchPerRequestTimeout(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(30 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(30*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 1*time.Second)
 
@@ -1119,7 +1119,7 @@ func TestDispatchPerRequestTimeout(t *testing.T) {
 }
 
 func TestRetryWithTransportError(t *testing.T) {
-	dispatcher := event.NewDispatcher(100 * time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(100*time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.DispatchWithRetry(context.Background(), evt, "http://127.0.0.1:1/fail", "", 1*time.Second, 2)
 
@@ -1146,7 +1146,7 @@ func TestRetry5xxTo4xxTransition(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 5)
 
@@ -1174,7 +1174,7 @@ func TestRetrySuccessAfterTransportError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(100 * time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(100*time.Millisecond, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 
 	_ = transportErrors
@@ -1193,7 +1193,7 @@ func TestDispatchEmptyEvent(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{}
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -1220,7 +1220,7 @@ func TestDispatchEventWithComplexData(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{
 		ID:        "evt-complex",
 		Type:      "user.registered",
@@ -1262,7 +1262,7 @@ func TestDispatchConcurrentRequests(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 
 	const numRequests = 10
 	results := make(chan *event.DispatchResult, numRequests)
@@ -1305,7 +1305,7 @@ func TestRetryBackoffRespectsContextDuringWait(t *testing.T) {
 		cancel()
 	}()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 
 	start := time.Now()
@@ -1331,7 +1331,7 @@ func TestRetryMaxRetriesOne(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 1)
 
@@ -1353,7 +1353,7 @@ func TestDispatchPerRequestTimeoutOverridesClient(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(10 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(10*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 
 	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 1*time.Second)
@@ -1375,7 +1375,7 @@ func TestDispatchLargePayload(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 
 	largeData := strings.Repeat("x", 10000)
 	evt := event.Event{ID: "evt-large", Type: "test", Data: largeData}
@@ -1468,12 +1468,12 @@ func TestWithUserAgent(t *testing.T) {
 		}))
 		defer server.Close()
 
-		dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
-		if !strings.HasPrefix(receivedUserAgent, "quotagate-Webhook/") {
-			t.Errorf("expected default User-Agent prefix 'quotagate-Webhook/', got '%s'", receivedUserAgent)
+		if !strings.HasPrefix(receivedUserAgent, "Quotagate-Webhook/") {
+			t.Errorf("expected default User-Agent prefix 'Quotagate-Webhook/', got '%s'", receivedUserAgent)
 		}
 	})
 }
@@ -1535,7 +1535,7 @@ func TestWithDefaultHeader(t *testing.T) {
 
 		dispatcher := event.NewDispatcher(5*time.Second,
 			event.WithDefaultHeader("Content-Type", "text/plain"),
-		event.WithSSRFPolicy(testSSRFPolicy()))
+			event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
 		dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -1905,7 +1905,7 @@ func TestDefaultBackoffStillWorksWithoutCustomFunc(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
 	result := dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 2)
 
@@ -1925,7 +1925,7 @@ func TestIdempotencyKeyHeaderSent(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "idempotency-evt-123", Type: "user.login"}
 	_ = dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
@@ -1950,7 +1950,7 @@ func TestIdempotencyKeyHeaderSentWithRetry(t *testing.T) {
 	}))
 	defer server.Close()
 
-	dispatcher := event.NewDispatcher(5 * time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
+	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "idempotency-retry-456", Type: "user.register"}
 	_ = dispatcher.DispatchWithRetry(context.Background(), evt, server.URL, "", 5*time.Second, 5)
 

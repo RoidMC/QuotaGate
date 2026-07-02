@@ -13,7 +13,7 @@ type WebhookConfig struct {
 	URL            string    `gorm:"size:512;not null" json:"url"`
 	Secret         string    `gorm:"size:128;not null;default:''" json:"-"`
 	Events         string    `gorm:"type:text;not null" json:"events"`
-	Active         bool      `gorm:"default:true;not null" json:"active"`
+	Active         bool      `gorm:"not null" json:"active"`
 	RetryCount     int       `gorm:"column:retry_count;default:3;not null" json:"retry_count"`
 	TimeoutSeconds int       `gorm:"column:timeout_seconds;default:10;not null" json:"timeout_seconds"`
 	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`
@@ -27,6 +27,7 @@ func (WebhookConfig) TableName() string {
 type WebhookDeliveryLog struct {
 	ID              string          `gorm:"primaryKey;size:36" json:"id"`
 	WebhookConfigID string          `gorm:"column:webhook_config_id;size:36;index;not null" json:"webhook_config_id"`
+	EventID         string          `gorm:"column:event_id;size:36;index;not null" json:"event_id"`
 	EventType       types.EventType `gorm:"column:event_type;size:64;not null;index" json:"event_type"`
 	RequestURL      string          `gorm:"column:request_url;size:512;not null" json:"request_url"`
 	RequestBody     string          `gorm:"column:request_body;type:text" json:"request_body"`
@@ -58,9 +59,9 @@ const (
 type WebhookOutbox struct {
 	ID             string          `gorm:"primaryKey;size:36" json:"id"`
 	EventType      types.EventType `gorm:"column:event_type;size:64;not null;index" json:"event_type"`
-	EventID        string          `gorm:"column:event_id;size:36;not null" json:"event_id"`
+	EventID        string          `gorm:"column:event_id;size:36;not null;uniqueIndex:idx_webhook_outbox_event_webhook" json:"event_id"`
 	TenantID       string          `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
-	WebhookID      string          `gorm:"column:webhook_id;size:36;index;not null" json:"webhook_id"`
+	WebhookID      string          `gorm:"column:webhook_id;size:36;not null;uniqueIndex:idx_webhook_outbox_event_webhook" json:"webhook_id"`
 	URL            string          `gorm:"column:url;size:512;not null" json:"url"`
 	Secret         string          `gorm:"column:secret;size:128;not null;default:''" json:"-"`
 	Payload        string          `gorm:"type:text;not null" json:"payload"`
