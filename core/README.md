@@ -2,6 +2,10 @@
 
 Headless Lightway & Fast AI API Router
 
+> ⚠️ **Warning**
+>
+> It is strictly prohibited for this project to be in the same database as KexCore IAM. KexCore IAM for this project only shares the same architecture and part of the code, and any database damage or failure caused by connecting to the same database will be the responsibility of the individual
+
 ## KexCore Architecture
 
 QuotaGate Backend is built on the **KexCore** architecture, a modular backend framework designed for high-performance API routing and service orchestration.
