@@ -1,3 +1,5 @@
+// QuotaGate universal router setup, customized and modified based on KexCore IAM project
+
 package router
 
 import (
@@ -18,6 +20,10 @@ type HandlerSet struct {
 }
 
 func Setup(r *chi.Mux, handlers *HandlerSet, tokenIssuer *service.TokenIssuer, authzManager *authz.AuthzManager, store kexswiftdb.Store, storeDriver string) {
+	// Global security middleware: applied to ALL routes.
+	r.Use(middleware.LimitRequestURI(middleware.DefaultMaxRequestURI))
+	r.Use(middleware.LimitRequestBody(middleware.DefaultMaxRequestBody))
+
 	r.Get("/", healthCheck(store))
 	r.Get("/health", healthCheck(store))
 	r.Get("/debug/store", storeDebugHandler(store, storeDriver))

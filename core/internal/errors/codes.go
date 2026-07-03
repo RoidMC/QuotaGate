@@ -9,6 +9,8 @@ const (
 	CodeMethodNotAllowed      = "METHOD_NOT_ALLOWED"
 	CodeConflict              = "CONFLICT"
 	CodeInternalError         = "INTERNAL_ERROR"
+	CodeURITooLong            = "URI_TOO_LONG"
+	CodeBodyTooLarge          = "BODY_TOO_LARGE"
 	CodeInvalidEmail          = "INVALID_EMAIL"
 	CodeInvalidUsername       = "INVALID_USERNAME"
 	CodeInvalidPassword       = "INVALID_PASSWORD"
@@ -218,5 +220,19 @@ func QRCodeConflict() *ErrorResponse {
 	return &ErrorResponse{
 		Code:    CodeQRCodeConflict,
 		Message: "qr code state conflict",
+	}
+}
+
+func URITooLong() *ErrorResponse {
+	return &ErrorResponse{
+		Code:    CodeURITooLong,
+		Message: "request URI exceeds maximum length",
+	}
+}
+
+func BodyTooLarge() *ErrorResponse {
+	return &ErrorResponse{
+		Code:    CodeBodyTooLarge,
+		Message: "request body exceeds maximum size",
 	}
 }

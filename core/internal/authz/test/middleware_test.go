@@ -67,6 +67,7 @@ func TestMiddleware_Authz_Forbidden(t *testing.T) {
 		w.Write([]byte("ok"))
 	})
 
+	// No role set → empty string → Casbin denies (anonymous boundary case)
 	req := httptest.NewRequest(http.MethodGet, "/api/users", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
@@ -106,7 +107,9 @@ func TestMiddleware_AuthzWithResource_Forbidden(t *testing.T) {
 		w.Write([]byte("ok"))
 	})
 
+	// Has role "anonymous" but no policy covering it
 	req := httptest.NewRequest(http.MethodGet, "/api/my-account", nil)
+	req = withRole(req, "anonymous")
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
