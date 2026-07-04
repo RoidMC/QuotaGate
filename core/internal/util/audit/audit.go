@@ -4,8 +4,14 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net"
 	"strings"
+	"time"
+)
+
+const (
+	SignatureVersion = "v2"
 )
 
 // AuditLogInput holds the raw input fields for audit log sanitization.
@@ -25,6 +31,7 @@ type AuditLogInput struct {
 	Detail     string
 	Before     string
 	After      string
+	Timestamp  time.Time
 }
 
 // SanitizeResult holds the sanitized audit log fields.
@@ -70,9 +77,15 @@ func SanitizeAuditLog(in AuditLogInput) SanitizeResult {
 
 // ComputeSignature calculates HMAC-SHA256 signature for audit log integrity.
 // The signed content is a canonical concatenation of key fields to detect tampering.
-// Format: action|actor_id|target_id|target_type|result|tenant_id|request_id|message
+// Format: v2|action|actor_id|target_id|target_type|result|tenant_id|request_id|message|timestamp
 func ComputeSignature(entry AuditLogInput, secret string) string {
+	timestampStr := entry.Timestamp.Format(time.RFC3339)
+	if timestampStr == "0001-01-01T00:00:00Z" {
+		timestampStr = time.Now().Format(time.RFC3339)
+	}
+
 	canonical := strings.Join([]string{
+		SignatureVersion,
 		entry.Action,
 		entry.ActorID,
 		entry.TargetID,
@@ -81,11 +94,21 @@ func ComputeSignature(entry AuditLogInput, secret string) string {
 		entry.TenantID,
 		entry.RequestID,
 		entry.Message,
+		timestampStr,
 	}, "|")
 
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(canonical))
 	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// VerifySignature verifies an audit log signature against the current data.
+func VerifySignature(entry AuditLogInput, secret, signature string) error {
+	expected := ComputeSignature(entry, secret)
+	if expected != signature {
+		return fmt.Errorf("audit log signature verification failed")
+	}
+	return nil
 }
 
 // sanitizeMessage sanitizes human-readable audit message (256 chars max).
@@ -209,7 +232,7 @@ func sanitizeResult(s string) string {
 	case "success", "failure", "denied":
 		return s
 	default:
-		return "success"
+		return "unknown"
 	}
 }
 

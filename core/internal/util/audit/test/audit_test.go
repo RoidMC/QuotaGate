@@ -128,7 +128,7 @@ func TestSanitizeAuditLog(t *testing.T) {
 				ActorID:    "user-1",
 				TargetID:   "user-1",
 				TargetType: "user",
-				Result:     "success",
+				Result:     "unknown",
 				Severity:   "info",
 				TenantID:   "t1",
 			},

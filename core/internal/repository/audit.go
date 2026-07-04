@@ -87,7 +87,32 @@ func (r *AuditLogRepository) ListByFilter(ctx context.Context, tenantID string, 
 	result := query.Order("created_at DESC").
 		Limit(limit).Offset(offset).
 		Find(&logs)
-	return logs, result.Error
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	for i := range logs {
+		if err := r.verifyLogSignature(&logs[i]); err != nil {
+			slog.Warn("audit log signature verification failed", "id", logs[i].ID, "error", err)
+			logs[i].Result = "unknown"
+		}
+	}
+
+	return logs, nil
+}
+
+func (r *AuditLogRepository) verifyLogSignature(log *model.AuditLog) error {
+	return audit.VerifySignature(audit.AuditLogInput{
+		Action:     string(log.Action),
+		ActorID:    log.ActorID,
+		TargetID:   log.TargetID,
+		TargetType: log.TargetType,
+		Result:     log.Result,
+		TenantID:   log.TenantID,
+		RequestID:  log.RequestID,
+		Message:    log.Message,
+		Timestamp:  log.CreatedAt,
+	}, r.signKey, log.Signature)
 }
 
 func (r *AuditLogRepository) CountByFilter(ctx context.Context, tenantID string, filter AuditFilter) (int64, error) {
@@ -128,6 +153,8 @@ func (r *AuditLogRepository) CountByFilter(ctx context.Context, tenantID string,
 // NewEntry creates a new AuditLog entry with HMAC-SHA256 signature.
 // Options (currently only WithBeforeAfter) can be passed to include snapshots.
 func (r *AuditLogRepository) NewEntry(action types.EventType, actorID, targetID, targetType, result, severity, tenantID, requestID, ip, userAgent, message, detail string, opts ...NewEntryOption) *model.AuditLog {
+	now := time.Now()
+
 	s := audit.SanitizeAuditLog(audit.AuditLogInput{
 		Action:     string(action),
 		ActorID:    actorID,
@@ -152,6 +179,7 @@ func (r *AuditLogRepository) NewEntry(action types.EventType, actorID, targetID,
 		TenantID:   s.TenantID,
 		RequestID:  s.RequestID,
 		Message:    s.Message,
+		Timestamp:  now,
 	}, r.signKey)
 
 	entry := &model.AuditLog{
@@ -169,6 +197,7 @@ func (r *AuditLogRepository) NewEntry(action types.EventType, actorID, targetID,
 		IP:         s.IP,
 		UserAgent:  s.UserAgent,
 		Signature:  signature,
+		CreatedAt:  now,
 	}
 
 	for _, opt := range opts {

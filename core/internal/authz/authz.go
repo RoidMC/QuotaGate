@@ -20,10 +20,12 @@ const (
 )
 
 type AuthzManager struct {
-	enforcer *casbin.Enforcer
+	enforcer *casbin.SyncedEnforcer
 	mode     Mode
 	adapter  *gormadapter.Adapter
 	initOnce sync.Once
+	initDone bool
+	initErr  error
 }
 
 func NewAuthzManager(db *gorm.DB, mode Mode) (*AuthzManager, error) {
@@ -42,7 +44,7 @@ func NewAuthzManager(db *gorm.DB, mode Mode) (*AuthzManager, error) {
 		return nil, fmt.Errorf("quotagate/authz: failed to create model: %w", err)
 	}
 
-	enforcer, err := casbin.NewEnforcer(m, adapter)
+	enforcer, err := casbin.NewSyncedEnforcer(m, adapter)
 	if err != nil {
 		return nil, fmt.Errorf("quotagate/authz: failed to create enforcer: %w", err)
 	}
@@ -61,34 +63,38 @@ func NewAuthzManager(db *gorm.DB, mode Mode) (*AuthzManager, error) {
 }
 
 func (m *AuthzManager) InitDefaultPolicies() error {
-	var initErr error
-
 	m.initOnce.Do(func() {
 		policies, err := m.enforcer.GetPolicy()
 		if err != nil {
-			initErr = fmt.Errorf("quotagate/authz: failed to get policy: %w", err)
+			m.initErr = fmt.Errorf("quotagate/authz: failed to get policy: %w", err)
 			return
 		}
 		if len(policies) > 0 {
+			m.initDone = true
 			return
 		}
 
 		for _, policy := range defaultPolicies {
 			if _, err := m.enforcer.AddPolicy(policy); err != nil {
-				initErr = fmt.Errorf("quotagate/authz: failed to add default policy: %w", err)
+				m.initErr = fmt.Errorf("quotagate/authz: failed to add default policy: %w", err)
 				return
 			}
 		}
 
 		for _, role := range defaultRoles {
 			if _, err := m.enforcer.AddRoleForUser(role[0], role[1]); err != nil {
-				initErr = fmt.Errorf("quotagate/authz: failed to add default role: %w", err)
+				m.initErr = fmt.Errorf("quotagate/authz: failed to add default role: %w", err)
 				return
 			}
 		}
+
+		m.initDone = true
 	})
 
-	return initErr
+	if !m.initDone {
+		return fmt.Errorf("quotagate/authz: initialization previously failed: %w", m.initErr)
+	}
+	return nil
 }
 
 func (m *AuthzManager) Enforce(rvals ...interface{}) (bool, error) {
@@ -100,7 +106,31 @@ func (m *AuthzManager) EnforceRBAC(sub, obj, act string) (bool, error) {
 }
 
 func (m *AuthzManager) AddPolicy(sub, obj, act string) (bool, error) {
+	if m.mode == ModeABAC {
+		if err := validateABACSubRule(sub); err != nil {
+			return false, err
+		}
+	}
 	return m.enforcer.AddPolicy([]string{sub, obj, act})
+}
+
+func validateABACSubRule(subRule string) error {
+	dangerousPatterns := []string{
+		"true",
+		"1==1",
+		"1 == 1",
+		"r.sub == r.sub",
+		"r.obj == r.obj",
+		"r.act == r.act",
+	}
+
+	for _, pattern := range dangerousPatterns {
+		if subRule == pattern {
+			return fmt.Errorf("quotagate/authz: ABAC sub_rule cannot be constant true expression")
+		}
+	}
+
+	return nil
 }
 
 func (m *AuthzManager) RemovePolicy(sub, obj, act string) (bool, error) {
