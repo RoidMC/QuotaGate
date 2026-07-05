@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"errors"
 
 	"github.com/roidmc/quotagate/internal/model"
@@ -59,9 +60,9 @@ func (r *WebAuthnRepository) FindByUserIDAndCredentialID(userID string, credenti
 	return &cred, nil
 }
 
-func (r *WebAuthnRepository) FindByID(id string) (*model.WebAuthnCredential, error) {
+func (r *WebAuthnRepository) FindByID(ctx context.Context, id string) (*model.WebAuthnCredential, error) {
 	var cred model.WebAuthnCredential
-	result := r.db.Where("id = ?", id).First(&cred)
+	result := r.db.WithContext(ctx).Where("id = ?", id).First(&cred)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrCredentialNotFound
@@ -79,8 +80,8 @@ func (r *WebAuthnRepository) ListByUserID(userID string) ([]model.WebAuthnCreden
 
 // Update persists field changes for the given credential.
 // Only non-zero fields are written; if the credential does not exist, ErrCredentialNotFound is returned.
-func (r *WebAuthnRepository) Update(cred *model.WebAuthnCredential) error {
-	result := r.db.Model(&model.WebAuthnCredential{}).Where("id = ?", cred.ID).Updates(cred)
+func (r *WebAuthnRepository) Update(ctx context.Context, cred *model.WebAuthnCredential) error {
+	result := r.db.WithContext(ctx).Model(&model.WebAuthnCredential{}).Where("id = ?", cred.ID).Updates(cred)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -123,9 +124,9 @@ func (r *WebAuthnRepository) DeleteByUserID(userID string) error {
 //   - newCount == stored: clone warning (credential may be cloned), update but
 //     return cloneWarning=true for upstream to decide deny/allow
 //   - newCount < stored: credential is cloned, reject entirely
-func (r *WebAuthnRepository) VerifyAndIncrementSignCount(credentialID []byte, newSignCount uint32) (storedCount uint32, cloneWarning bool, err error) {
+func (r *WebAuthnRepository) VerifyAndIncrementSignCount(ctx context.Context, credentialID []byte, newSignCount uint32) (storedCount uint32, cloneWarning bool, err error) {
 	var cred model.WebAuthnCredential
-	result := r.db.Where("credential_id = ?", credentialID).First(&cred)
+	result := r.db.WithContext(ctx).Where("credential_id = ?", credentialID).First(&cred)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return 0, false, ErrCredentialNotFound
@@ -144,7 +145,7 @@ func (r *WebAuthnRepository) VerifyAndIncrementSignCount(credentialID []byte, ne
 		// No increase — possible cloning. Update count (to prevent replay attacks
 		// on the same credential) but signal upstream to consider denial.
 		cred.SignCount = newSignCount
-		if err := r.Update(&cred); err != nil {
+		if err := r.Update(ctx, &cred); err != nil {
 			return storedCount, false, err
 		}
 		return storedCount, true, nil
@@ -152,7 +153,7 @@ func (r *WebAuthnRepository) VerifyAndIncrementSignCount(credentialID []byte, ne
 
 	// newSignCount > storedCount — normal case
 	cred.SignCount = newSignCount
-	if err := r.Update(&cred); err != nil {
+	if err := r.Update(ctx, &cred); err != nil {
 		return storedCount, false, err
 	}
 	return storedCount, false, nil
