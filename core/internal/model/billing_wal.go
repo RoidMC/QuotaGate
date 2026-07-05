@@ -11,6 +11,7 @@ import "time"
 type WALRow struct {
 	ID        int64  `json:"id" gorm:"primaryKey;autoIncrement"`
 	RequestID string `json:"request_id" gorm:"type:varchar(64);uniqueIndex;not null"`
+	TenantID  string `json:"tenant_id" gorm:"type:varchar(36);index;not null;default:''"`
 	UserID    string `json:"user_id" gorm:"type:varchar(36);index;not null"`
 	// User snapshot at billing time.  IAM deletes users hard, so this snapshot
 	// preserves identity for audit even after the user record is gone.

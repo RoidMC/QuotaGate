@@ -9,6 +9,7 @@ var ErrCloneWarning = errors.New("quotagate/model: potential credential cloning 
 
 type WebAuthnCredential struct {
 	ID              string     `gorm:"primaryKey;size:36" json:"id"`
+	TenantID        string     `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
 	UserID          string     `gorm:"index;size:36;not null" json:"user_id"`
 	CredentialID    []byte     `gorm:"uniqueIndex;type:blob;not null" json:"-"`
 	PublicKey       []byte     `gorm:"type:blob;not null" json:"-"`

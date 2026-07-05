@@ -6,6 +6,7 @@ import (
 
 type UserIdentity struct {
 	ID          string     `gorm:"primaryKey;size:36" json:"id"`
+	TenantID    string     `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
 	UserID      string     `gorm:"uniqueIndex:idx_provider_subject;size:36;not null" json:"user_id"`
 	Provider    string     `gorm:"uniqueIndex:idx_provider_subject;size:32;not null" json:"provider"`
 	Subject     string     `gorm:"uniqueIndex:idx_provider_subject;size:255;not null" json:"subject"`

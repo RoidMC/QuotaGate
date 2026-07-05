@@ -4,6 +4,7 @@ import "time"
 
 type Session struct {
 	ID           string     `gorm:"primaryKey;size:36" json:"id"`
+	TenantID     string     `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
 	UserID       string     `gorm:"index;size:36;not null" json:"user_id"`
 	TokenHash    string     `gorm:"column:token_hash;size:255;not null" json:"-"`
 	DeviceName   string     `gorm:"column:device_name;size:128" json:"device_name"`

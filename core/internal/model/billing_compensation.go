@@ -8,6 +8,7 @@ import "time"
 type CompensationRow struct {
 	ID           int64     `json:"id" gorm:"primaryKey;autoIncrement"`
 	WALID        int64     `json:"wal_id" gorm:"uniqueIndex;not null"`
+	TenantID     string    `json:"tenant_id" gorm:"type:varchar(36);index;not null;default:''"`
 	Action       string    `json:"action" gorm:"type:varchar(32);not null"`
 	Status       string    `json:"status" gorm:"type:varchar(32);not null;default:'pending'"`
 	RetryCount   int       `json:"retry_count" gorm:"default:0"`
