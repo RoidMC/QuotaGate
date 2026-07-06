@@ -6,24 +6,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/roidmc/quotagate/internal/config"
 	kexerrors "github.com/roidmc/quotagate/internal/errors"
 	"github.com/roidmc/quotagate/internal/service"
 	kexjwt "github.com/roidmc/quotagate/pkg/jwt"
 )
-
-func HTTPHeaders(cfg *config.Config) func(http.Handler) http.Handler {
-	serverHeader := cfg.Server.Name + "/" + cfg.Server.Version
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Server", serverHeader)
-			w.Header().Set("X-Content-Type-Options", cfg.HTTP.Headers.XContentTypeOptions)
-			w.Header().Set("X-Frame-Options", cfg.HTTP.Headers.XFrameOptions)
-			w.Header().Set("X-XSS-Protection", cfg.HTTP.Headers.XXSSProtection)
-			next.ServeHTTP(w, r)
-		})
-	}
-}
 
 func BearerAuth(issuer *service.TokenIssuer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
