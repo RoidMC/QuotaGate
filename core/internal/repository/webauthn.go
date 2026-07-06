@@ -21,20 +21,24 @@ func NewWebAuthnRepository(db *gorm.DB) *WebAuthnRepository {
 	return &WebAuthnRepository{db: db}
 }
 
-func (r *WebAuthnRepository) AutoMigrate() error {
-	return r.db.AutoMigrate(&model.WebAuthnCredential{})
+func (r *WebAuthnRepository) AutoMigrate(ctx context.Context) error {
+	return r.db.WithContext(ctx).AutoMigrate(&model.WebAuthnCredential{})
 }
 
-func (r *WebAuthnRepository) Create(cred *model.WebAuthnCredential) error {
+func (r *WebAuthnRepository) Create(ctx context.Context, cred *model.WebAuthnCredential) error {
 	if cred.ID == "" {
 		cred.ID = random.MustUUIDString()
 	}
-	return r.db.Create(cred).Error
+	return r.db.WithContext(ctx).Create(cred).Error
 }
 
-func (r *WebAuthnRepository) FindByCredentialID(credentialID []byte) (*model.WebAuthnCredential, error) {
+func (r *WebAuthnRepository) FindByCredentialID(ctx context.Context, credentialID []byte) (*model.WebAuthnCredential, error) {
 	var cred model.WebAuthnCredential
-	result := r.db.Where("credential_id = ?", credentialID).First(&cred)
+	// credential_id 本身全局唯一，但 webauthn_credentials 已实现 TenantAware，
+	// 因此仍受 tenant callback 限制：调用方 ctx 必须含 tenant_id 或显式 Bypass。
+	// 推荐：在已知 user 的 tenant 后用 WithTenant(ctx, tenantID)；仅在登录
+	// 验证等无法预知 tenant 的场景使用 tenant.Bypass(ctx)。
+	result := r.db.WithContext(ctx).Where("credential_id = ?", credentialID).First(&cred)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrCredentialNotFound
@@ -48,10 +52,12 @@ func (r *WebAuthnRepository) FindByCredentialID(credentialID []byte) (*model.Web
 // This is the correct lookup for WebAuthn authenticator verification (FIDO2)
 // where the client presents the credential ID and the server must confirm it
 // belongs to the authenticated user.
-func (r *WebAuthnRepository) FindByUserIDAndCredentialID(userID string, credentialID []byte) (*model.WebAuthnCredential, error) {
+func (r *WebAuthnRepository) FindByUserIDAndCredentialID(ctx context.Context, userID string, credentialID []byte) (*model.WebAuthnCredential, error) {
 	var cred model.WebAuthnCredential
-	result := r.db.Where("user_id = ? AND credential_id = ?", userID, credentialID).First(&cred)
+	result := r.db.WithContext(ctx).Where("user_id = ? AND credential_id = ?", userID, credentialID).First(&cred)
 	if result.Error != nil {
+		// 注意：此处 ErrRecordNotFound 不转 ErrCredentialNotFound，保留原始语义
+		// 因为 (user_id, credential_id) 联合查找失败不代表 credential 不存在
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, ErrCredentialNotFound
 		}
@@ -65,6 +71,7 @@ func (r *WebAuthnRepository) FindByID(ctx context.Context, id string) (*model.We
 	result := r.db.WithContext(ctx).Where("id = ?", id).First(&cred)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// 注意：此处 ErrRecordNotFound 不转 ErrCredentialNotFound，保留原始语义
 			return nil, ErrCredentialNotFound
 		}
 		return nil, result.Error
@@ -72,9 +79,9 @@ func (r *WebAuthnRepository) FindByID(ctx context.Context, id string) (*model.We
 	return &cred, nil
 }
 
-func (r *WebAuthnRepository) ListByUserID(userID string) ([]model.WebAuthnCredential, error) {
+func (r *WebAuthnRepository) ListByUserID(ctx context.Context, userID string) ([]model.WebAuthnCredential, error) {
 	var creds []model.WebAuthnCredential
-	result := r.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&creds)
+	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("created_at DESC").Find(&creds)
 	return creds, result.Error
 }
 
@@ -91,8 +98,8 @@ func (r *WebAuthnRepository) Update(ctx context.Context, cred *model.WebAuthnCre
 	return nil
 }
 
-func (r *WebAuthnRepository) Delete(id string) error {
-	result := r.db.Where("id = ?", id).Delete(&model.WebAuthnCredential{})
+func (r *WebAuthnRepository) Delete(ctx context.Context, id string) error {
+	result := r.db.WithContext(ctx).Where("id = ?", id).Delete(&model.WebAuthnCredential{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -104,8 +111,8 @@ func (r *WebAuthnRepository) Delete(id string) error {
 
 // DeleteByUserID deletes all WebAuthn credentials belonging to a user.
 // Returns ErrCredentialNotFound if no credentials were deleted.
-func (r *WebAuthnRepository) DeleteByUserID(userID string) error {
-	result := r.db.Where("user_id = ?", userID).Delete(&model.WebAuthnCredential{})
+func (r *WebAuthnRepository) DeleteByUserID(ctx context.Context, userID string) error {
+	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Delete(&model.WebAuthnCredential{})
 	if result.Error != nil {
 		return result.Error
 	}
