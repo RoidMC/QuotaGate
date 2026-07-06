@@ -29,6 +29,8 @@ type Wallet struct {
 
 func (Wallet) TableName() string { return "billing_wallets" }
 
+func (Wallet) TenantAware() bool { return true }
+
 const (
 	WalletStatusActive   = "active"
 	WalletStatusFrozen   = "frozen"

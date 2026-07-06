@@ -38,6 +38,8 @@ type Transaction struct {
 
 func (Transaction) TableName() string { return "billing_transactions" }
 
+func (Transaction) TenantAware() bool { return true }
+
 const (
 	TransactionTypeRecharge     = "recharge"
 	TransactionTypeConsume      = "consume"

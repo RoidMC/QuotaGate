@@ -51,6 +51,8 @@ type Invoice struct {
 
 func (Invoice) TableName() string { return "billing_invoices" }
 
+func (Invoice) TenantAware() bool { return true }
+
 const (
 	InvoiceTypeConsumption  = "consumption"
 	InvoiceTypeRecharge     = "recharge"

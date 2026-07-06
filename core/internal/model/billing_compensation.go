@@ -21,6 +21,8 @@ type CompensationRow struct {
 
 func (CompensationRow) TableName() string { return "billing_compensation" }
 
+func (CompensationRow) TenantAware() bool { return true }
+
 const (
 	CompensationStatusPending    = "pending"
 	CompensationStatusProcessing = "processing"

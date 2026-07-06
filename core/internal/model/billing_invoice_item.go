@@ -40,6 +40,8 @@ type InvoiceItem struct {
 
 func (InvoiceItem) TableName() string { return "billing_invoice_items" }
 
+func (InvoiceItem) TenantAware() bool { return true }
+
 const (
 	InvoiceItemStatusActive    = "active"
 	InvoiceItemStatusCancelled = "cancelled" // logical deletion; never physically dropped

@@ -15,3 +15,5 @@ type RecoveryCode struct {
 func (RecoveryCode) TableName() string {
 	return "recovery_codes"
 }
+
+func (RecoveryCode) TenantAware() bool { return true }

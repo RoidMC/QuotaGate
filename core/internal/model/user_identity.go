@@ -22,3 +22,5 @@ type UserIdentity struct {
 func (UserIdentity) TableName() string {
 	return "user_identities"
 }
+
+func (UserIdentity) TenantAware() bool { return true }

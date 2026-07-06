@@ -30,6 +30,8 @@ func (User) TableName() string {
 	return "users"
 }
 
+func (User) TenantAware() bool { return true }
+
 type UserRole string
 
 const (

@@ -48,6 +48,8 @@ type Plan struct {
 
 func (Plan) TableName() string { return "billing_plans" }
 
+func (Plan) TenantAware() bool { return true }
+
 // Subscription links a user (or tenant) to a plan with quota tracking and renewal state.
 type Subscription struct {
 	ID       string `gorm:"primaryKey;size:36" json:"id"`
@@ -97,6 +99,8 @@ type Subscription struct {
 }
 
 func (Subscription) TableName() string { return "billing_subscriptions" }
+
+func (Subscription) TenantAware() bool { return true }
 
 const (
 	PlanTypeQuota     = "quota"

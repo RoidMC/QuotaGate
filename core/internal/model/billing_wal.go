@@ -32,6 +32,8 @@ type WALRow struct {
 
 func (WALRow) TableName() string { return "billing_wal" }
 
+func (WALRow) TenantAware() bool { return true }
+
 const (
 	WALStatusPending   = "pending"
 	WALStatusSettled   = "settled"

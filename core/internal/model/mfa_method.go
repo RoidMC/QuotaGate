@@ -16,3 +16,5 @@ type MFAMethod struct {
 func (MFAMethod) TableName() string {
 	return "mfa_methods"
 }
+
+func (MFAMethod) TenantAware() bool { return true }

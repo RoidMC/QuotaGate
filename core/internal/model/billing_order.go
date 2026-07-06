@@ -44,6 +44,8 @@ type Order struct {
 
 func (Order) TableName() string { return "billing_orders" }
 
+func (Order) TenantAware() bool { return true }
+
 const (
 	OrderStatusPending   = "pending"
 	OrderStatusSettled   = "settled"

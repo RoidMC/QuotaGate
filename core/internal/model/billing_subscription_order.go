@@ -32,6 +32,8 @@ type SubscriptionOrder struct {
 
 func (SubscriptionOrder) TableName() string { return "billing_subscription_orders" }
 
+func (SubscriptionOrder) TenantAware() bool { return true }
+
 const (
 	SubscriptionOrderStatusPending = "pending"
 	SubscriptionOrderStatusSuccess = "success"

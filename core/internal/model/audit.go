@@ -30,6 +30,8 @@ func (AuditLog) TableName() string {
 	return "audit_logs"
 }
 
+func (AuditLog) TenantAware() bool { return true }
+
 const (
 	TargetTypeUser        = "user"
 	TargetTypeTenant      = "tenant"

@@ -30,6 +30,8 @@ type ModelQuota struct {
 
 func (ModelQuota) TableName() string { return "billing_model_quotas" }
 
+func (ModelQuota) TenantAware() bool { return true }
+
 const (
 	ModelQuotaStatusActive    = "active"
 	ModelQuotaStatusCancelled = "cancelled" // logical deletion; never physically dropped

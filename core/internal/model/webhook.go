@@ -24,6 +24,8 @@ func (WebhookConfig) TableName() string {
 	return "webhook_configs"
 }
 
+func (WebhookConfig) TenantAware() bool { return true }
+
 type WebhookDeliveryLog struct {
 	ID              string          `gorm:"primaryKey;size:36" json:"id"`
 	WebhookConfigID string          `gorm:"column:webhook_config_id;size:36;index;not null" json:"webhook_config_id"`
@@ -78,3 +80,5 @@ type WebhookOutbox struct {
 func (WebhookOutbox) TableName() string {
 	return "webhook_outbox"
 }
+
+func (WebhookOutbox) TenantAware() bool { return true }

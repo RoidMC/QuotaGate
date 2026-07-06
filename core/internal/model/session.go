@@ -20,3 +20,5 @@ type Session struct {
 func (Session) TableName() string {
 	return "sessions"
 }
+
+func (Session) TenantAware() bool { return true }

@@ -33,3 +33,5 @@ type WebAuthnCredential struct {
 func (WebAuthnCredential) TableName() string {
 	return "webauthn_credentials"
 }
+
+func (WebAuthnCredential) TenantAware() bool { return true }
