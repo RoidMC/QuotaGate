@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"context"
 	"encoding/json"
 	"log/slog"
 
@@ -25,10 +24,10 @@ func NewOutboxHandler(repo *repository.WebhookRepository) event.EventHandler {
 			return
 		}
 
-		// event.EventHandler currently does not carry a context; use a background
-		// context for the database write. If the event bus is later updated to
-		// propagate context, pass it through here.
-		if err := repo.CreateOutboxEntries(context.Background(), evt.Type, evt.ID, evt.Subject, string(payload)); err != nil {
+		// event.EventHandler does not carry a transaction; use the repository's
+		// default database connection. For transactional publishing use
+		// event.TransactionalBus instead.
+		if err := repo.CreateOutboxEntries(repo.DB(), evt.Type, evt.ID, evt.Subject, string(payload)); err != nil {
 			slog.Error("quotagate/worker: create outbox entries failed", "error", err)
 		}
 	}

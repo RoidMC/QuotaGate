@@ -26,6 +26,12 @@ func NewWebhookRepository(db *gorm.DB) *WebhookRepository {
 	return &WebhookRepository{db: db}
 }
 
+// DB returns the underlying *gorm.DB. Callers should use it only when they
+// need to pass a database handle to methods that accept *gorm.DB directly.
+func (r *WebhookRepository) DB() *gorm.DB {
+	return r.db
+}
+
 func (r *WebhookRepository) AutoMigrate() error {
 	if err := r.db.AutoMigrate(&model.WebhookConfig{}); err != nil {
 		return err
@@ -59,8 +65,12 @@ func (r *WebhookRepository) FindByTenantID(ctx context.Context, tenantID string)
 }
 
 func (r *WebhookRepository) FindActiveByEvent(ctx context.Context, eventType types.EventType) ([]model.WebhookConfig, error) {
+	return r.findActiveByEvent(r.db.WithContext(ctx), eventType)
+}
+
+func (r *WebhookRepository) findActiveByEvent(db *gorm.DB, eventType types.EventType) ([]model.WebhookConfig, error) {
 	var configs []model.WebhookConfig
-	result := r.db.WithContext(ctx).Where("active = ?", true).Find(&configs)
+	result := db.Where("active = ?", true).Find(&configs)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -118,8 +128,13 @@ func (r *WebhookRepository) ListDeliveryLogs(ctx context.Context, webhookConfigI
 	return logs, result.Error
 }
 
-func (r *WebhookRepository) CreateOutboxEntries(ctx context.Context, eventType types.EventType, eventID, tenantID, payload string) error {
-	configs, err := r.FindActiveByEvent(ctx, eventType)
+// CreateOutboxEntries writes one outbox entry per active webhook config that
+// matches eventType. The db argument may be a plain *gorm.DB or a transaction
+// (*gorm.DB returned by db.Begin()/db.Transaction); all reads and writes are
+// executed on it, so callers can make the outbox write atomic with their
+// business transaction.
+func (r *WebhookRepository) CreateOutboxEntries(db *gorm.DB, eventType types.EventType, eventID, tenantID, payload string) error {
+	configs, err := r.findActiveByEvent(db, eventType)
 	if err != nil {
 		return err
 	}
@@ -145,7 +160,7 @@ func (r *WebhookRepository) CreateOutboxEntries(ctx context.Context, eventType t
 		})
 	}
 
-	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+	return db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "event_id"}, {Name: "webhook_id"}},
 		DoNothing: true,
 	}).Create(&entries).Error

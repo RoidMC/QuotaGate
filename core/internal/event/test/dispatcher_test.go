@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -427,25 +426,30 @@ func TestDispatcherDispatchWithRetry(t *testing.T) {
 }
 
 func TestDispatcherResponseBodyReadError(t *testing.T) {
-	l, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer l.Close()
-
-	addr := l.Addr().String()
-	go func() {
-		conn, err := l.Accept()
-		if err != nil {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			http.Error(w, "hijacker not supported", http.StatusInternalServerError)
 			return
 		}
+		conn, _, err := hj.Hijack()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer conn.Close()
+
+		// Declare Content-Length: 100 but only send 5 bytes. Keep the
+		// connection open briefly so the HTTP client finishes reading
+		// headers and the error surfaces during body read.
 		conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nhello"))
-		conn.Close()
-	}()
+		time.Sleep(100 * time.Millisecond)
+	}))
+	defer server.Close()
 
 	dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 	evt := event.Event{ID: "evt-1", Type: "test"}
-	result := dispatcher.Dispatch(context.Background(), evt, "http://"+addr, "", 5*time.Second)
+	result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
 	if result.Success {
 		t.Error("expected failure when response body cannot be fully read")
@@ -557,27 +561,33 @@ func TestDispatchErrorCode(t *testing.T) {
 	})
 
 	t.Run("read body error returns ErrCodeReadBody", func(t *testing.T) {
-		l, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer l.Close()
-
-		go func() {
-			conn, err := l.Accept()
-			if err != nil {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			hj, ok := w.(http.Hijacker)
+			if !ok {
+				http.Error(w, "hijacker not supported", http.StatusInternalServerError)
 				return
 			}
+			conn, _, err := hj.Hijack()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer conn.Close()
+
+			// Declare Content-Length: 1000 but only send 5 bytes. Keep the
+			// connection open briefly so the HTTP client finishes reading
+			// headers and the error surfaces during body read.
 			conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Length: 1000\r\n\r\nshort"))
-			conn.Close()
-		}()
+			time.Sleep(100 * time.Millisecond)
+		}))
+		defer server.Close()
 
 		dispatcher := event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 		evt := event.Event{ID: "evt-1", Type: "test"}
-		result := dispatcher.Dispatch(context.Background(), evt, "http://"+l.Addr().String(), "", 5*time.Second)
+		result := dispatcher.Dispatch(context.Background(), evt, server.URL, "", 5*time.Second)
 
 		if result.ErrorCode != event.ErrCodeReadBody {
-			t.Errorf("expected ErrCodeReadBody, got %s", result.ErrorCode)
+			t.Errorf("expected ErrCodeReadBody, got %s (error: %s)", result.ErrorCode, result.Error)
 		}
 	})
 }
