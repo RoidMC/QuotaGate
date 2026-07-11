@@ -13,8 +13,8 @@ import (
 // against the sanitizePath + keyMatch3 defense stack.
 func TestPathTraversalExtremeCases(t *testing.T) {
 	manager := setupTestManager(t)
-	_, _ = manager.AddPolicy("admin", "/api/users/{id}", "GET")
-	_, _ = manager.AddPolicy("admin", "/api/files/*", "GET")
+	_, _ = manager.AddPolicy("*", "admin", "GET", "/api/users/{id}", "*")
+	_, _ = manager.AddPolicy("*", "admin", "GET", "/api/files/*", "*")
 
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
@@ -22,7 +22,7 @@ func TestPathTraversalExtremeCases(t *testing.T) {
 			next.ServeHTTP(w, withRole(r, "admin"))
 		})
 	})
-	r.Use(middleware.Authz(manager))
+	r.Use(middleware.Authz(manager, nil))
 	r.Get("/api/users/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
@@ -98,7 +98,7 @@ func TestPathTraversalExtremeCases(t *testing.T) {
 // with pathologically long paths.
 func TestLongPathDoS(t *testing.T) {
 	manager := setupTestManager(t)
-	_, _ = manager.AddPolicy("admin", "/api/users/{id}", "GET")
+	_, _ = manager.AddPolicy("*", "admin", "GET", "/api/users/{id}", "*")
 
 	// Generate a 10KB path
 	longSegment := ""
@@ -112,7 +112,7 @@ func TestLongPathDoS(t *testing.T) {
 			next.ServeHTTP(w, withRole(r, "admin"))
 		})
 	})
-	r.Use(middleware.Authz(manager))
+	r.Use(middleware.Authz(manager, nil))
 	r.Get("/api/users/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -131,7 +131,7 @@ func TestLongPathDoS(t *testing.T) {
 // don't bypass authorization after Go's URL decoding.
 func TestEncodedPathBypass(t *testing.T) {
 	manager := setupTestManager(t)
-	_, _ = manager.AddPolicy("admin", "/api/admin/secret", "GET")
+	_, _ = manager.AddPolicy("*", "admin", "GET", "/api/admin/secret", "*")
 
 	r := chi.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
@@ -139,7 +139,7 @@ func TestEncodedPathBypass(t *testing.T) {
 			next.ServeHTTP(w, withRole(r, "admin"))
 		})
 	})
-	r.Use(middleware.Authz(manager))
+	r.Use(middleware.Authz(manager, nil))
 	r.Get("/api/admin/secret", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("secret"))

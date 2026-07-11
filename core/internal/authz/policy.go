@@ -1,79 +1,148 @@
 package authz
 
-// defaultPolicies are the bootstrap rules seeded on first startup.
-// Admins can customize them later via the policy API; these defaults
-// only need to cover the common "admin manages the gateway, user manages self" case.
+// defaultPolicies are the bootstrap p-rules seeded on first startup.
+// They use the domain RBAC five-tuple:
+// (subOwner, subName, method, urlPath, objOwner).
+//
+// subOwner = "*" means the policy applies to all tenants (system-level policy).
+// objOwner = "*" means the resource is system-wide or tenant-agnostic.
+// Role inheritance (e.g. admin -> user) is derived from RoleDefinition.InheritedRoles
+// at runtime and is NOT stored here.
 var defaultPolicies = [][]string{
-	// Public auth endpoints
-	{"anonymous", "/api/auth/register", "POST"},
-	{"anonymous", "/api/auth/login", "POST"},
-	{"anonymous", "/api/auth/refresh", "POST"},
-	{"anonymous", "/api/auth/methods", "GET"},
-
 	// User self-service
-	{"user", "/api/my-account", "GET"},
-	{"user", "/api/my-account", "PUT"},
-	{"user", "/api/my-account/password", "POST"},
+	{"*", "user", "GET", "/api/my-account", "*"},
+	{"*", "user", "PUT", "/api/my-account", "*"},
+	{"*", "user", "POST", "/api/my-account/password", "*"},
 
-	{"user", "/api/tokens", "GET"},
-	{"user", "/api/tokens", "POST"},
-	{"user", "/api/tokens/{id}", "GET"},
-	{"user", "/api/tokens/{id}", "PUT"},
-	{"user", "/api/tokens/{id}", "DELETE"},
+	{"*", "user", "GET", "/api/tokens", "*"},
+	{"*", "user", "POST", "/api/tokens", "*"},
+	{"*", "user", "GET", "/api/tokens/{id}", "*"},
+	{"*", "user", "PUT", "/api/tokens/{id}", "*"},
+	{"*", "user", "DELETE", "/api/tokens/{id}", "*"},
 
-	{"user", "/api/models", "GET"},
-	{"user", "/api/pricing", "GET"},
-	{"user", "/api/channels", "GET"},
-	{"user", "/api/logs/self", "GET"},
-	{"user", "/api/billing/self", "GET"},
-	{"user", "/api/topup", "GET"},
-	{"user", "/api/topup", "POST"},
+	{"*", "user", "GET", "/api/models", "*"},
+	{"*", "user", "GET", "/api/pricing", "*"},
+	{"*", "user", "GET", "/api/channels", "*"},
+	{"*", "user", "GET", "/api/logs/self", "*"},
+	{"*", "user", "GET", "/api/billing/self", "*"},
+	{"*", "user", "GET", "/api/topup", "*"},
+	{"*", "user", "POST", "/api/topup", "*"},
 
 	// Admin general management
-	{"admin", "/api/users", "GET"},
-	{"admin", "/api/users", "POST"},
-	{"admin", "/api/users/{id}", "GET"},
-	{"admin", "/api/users/{id}", "PUT"},
-	{"admin", "/api/users/{id}", "DELETE"},
+	{"*", "admin", "GET", "/api/users", "*"},
+	{"*", "admin", "POST", "/api/users", "*"},
+	{"*", "admin", "GET", "/api/users/{id}", "*"},
+	{"*", "admin", "PUT", "/api/users/{id}", "*"},
+	{"*", "admin", "DELETE", "/api/users/{id}", "*"},
 
-	{"admin", "/api/roles", "GET"},
-	{"admin", "/api/roles", "POST"},
-	{"admin", "/api/roles/{id}", "PUT"},
-	{"admin", "/api/roles/{id}", "DELETE"},
+	{"*", "admin", "GET", "/api/roles", "*"},
+	{"*", "admin", "POST", "/api/roles", "*"},
+	{"*", "admin", "PUT", "/api/roles/{id}", "*"},
+	{"*", "admin", "DELETE", "/api/roles/{id}", "*"},
 
-	{"admin", "/api/policies", "GET"},
-	{"admin", "/api/policies", "POST"},
-	{"admin", "/api/policies/{id}", "DELETE"},
+	{"*", "admin", "GET", "/api/policies", "*"},
+	{"*", "admin", "POST", "/api/policies", "*"},
+	{"*", "admin", "DELETE", "/api/policies/{id}", "*"},
 
 	// Admin gateway management
-	{"admin", "/api/channels", "POST"},
-	{"admin", "/api/channels/{id}", "GET"},
-	{"admin", "/api/channels/{id}", "PUT"},
-	{"admin", "/api/channels/{id}", "DELETE"},
-	{"admin", "/api/channels/{id}/test", "POST"},
+	{"*", "admin", "POST", "/api/channels", "*"},
+	{"*", "admin", "GET", "/api/channels/{id}", "*"},
+	{"*", "admin", "PUT", "/api/channels/{id}", "*"},
+	{"*", "admin", "DELETE", "/api/channels/{id}", "*"},
+	{"*", "admin", "POST", "/api/channels/{id}/test", "*"},
 
-	{"admin", "/api/models", "POST"},
-	{"admin", "/api/models/{id}", "PUT"},
-	{"admin", "/api/models/{id}", "DELETE"},
-	{"admin", "/api/pricing", "POST"},
-	{"admin", "/api/pricing", "PUT"},
+	{"*", "admin", "POST", "/api/models", "*"},
+	{"*", "admin", "PUT", "/api/models/{id}", "*"},
+	{"*", "admin", "DELETE", "/api/models/{id}", "*"},
+	{"*", "admin", "POST", "/api/pricing", "*"},
+	{"*", "admin", "PUT", "/api/pricing", "*"},
 
 	// Admin operations
-	{"admin", "/api/logs", "GET"},
-	{"admin", "/api/audits", "GET"},
-	{"admin", "/api/redemptions", "GET"},
-	{"admin", "/api/redemptions", "POST"},
-	{"admin", "/api/redemptions/{id}", "DELETE"},
-	{"admin", "/api/topup/complete", "POST"},
-	{"admin", "/api/billing", "GET"},
+	{"*", "admin", "GET", "/api/logs", "*"},
+	{"*", "admin", "GET", "/api/audits", "*"},
+	{"*", "admin", "GET", "/api/redemptions", "*"},
+	{"*", "admin", "POST", "/api/redemptions", "*"},
+	{"*", "admin", "DELETE", "/api/redemptions/{id}", "*"},
+	{"*", "admin", "POST", "/api/topup/complete", "*"},
+	{"*", "admin", "GET", "/api/billing", "*"},
 
 	// Admin system settings
-	{"admin", "/api/options", "GET"},
-	{"admin", "/api/options", "PUT"},
-	{"admin", "/api/system/status", "GET"},
-	{"admin", "/api/system/performance", "GET"},
+	{"*", "admin", "GET", "/api/options", "*"},
+	{"*", "admin", "PUT", "/api/options", "*"},
+	{"*", "admin", "GET", "/api/system/status", "*"},
+	{"*", "admin", "GET", "/api/system/performance", "*"},
 }
 
-var defaultRoles = [][]string{
-	{"admin", "user"},
+// RouteMetaTuple is a lightweight (method, path) pair used for bootstrap
+// route metadata seeding.
+type RouteMetaTuple struct {
+	Method string
+	Path   string
+}
+
+// DefaultRouteMetas returns the bootstrap route metadata tuples.
+func DefaultRouteMetas() []RouteMetaTuple {
+	return defaultRouteMetas
+}
+
+// defaultRouteMetas pairs each default policy route with its rule type.
+// All bootstrap routes use RBAC; ABAC routes are configured at runtime.
+var defaultRouteMetas = []RouteMetaTuple{
+	{"GET", "/api/my-account"},
+	{"PUT", "/api/my-account"},
+	{"POST", "/api/my-account/password"},
+
+	{"GET", "/api/tokens"},
+	{"POST", "/api/tokens"},
+	{"GET", "/api/tokens/{id}"},
+	{"PUT", "/api/tokens/{id}"},
+	{"DELETE", "/api/tokens/{id}"},
+
+	{"GET", "/api/models"},
+	{"GET", "/api/pricing"},
+	{"GET", "/api/channels"},
+	{"GET", "/api/logs/self"},
+	{"GET", "/api/billing/self"},
+	{"GET", "/api/topup"},
+	{"POST", "/api/topup"},
+
+	{"GET", "/api/users"},
+	{"POST", "/api/users"},
+	{"GET", "/api/users/{id}"},
+	{"PUT", "/api/users/{id}"},
+	{"DELETE", "/api/users/{id}"},
+
+	{"GET", "/api/roles"},
+	{"POST", "/api/roles"},
+	{"PUT", "/api/roles/{id}"},
+	{"DELETE", "/api/roles/{id}"},
+
+	{"GET", "/api/policies"},
+	{"POST", "/api/policies"},
+	{"DELETE", "/api/policies/{id}"},
+
+	{"POST", "/api/channels"},
+	{"GET", "/api/channels/{id}"},
+	{"PUT", "/api/channels/{id}"},
+	{"DELETE", "/api/channels/{id}"},
+	{"POST", "/api/channels/{id}/test"},
+
+	{"POST", "/api/models"},
+	{"PUT", "/api/models/{id}"},
+	{"DELETE", "/api/models/{id}"},
+	{"POST", "/api/pricing"},
+	{"PUT", "/api/pricing"},
+
+	{"GET", "/api/logs"},
+	{"GET", "/api/audits"},
+	{"GET", "/api/redemptions"},
+	{"POST", "/api/redemptions"},
+	{"DELETE", "/api/redemptions/{id}"},
+	{"POST", "/api/topup/complete"},
+	{"GET", "/api/billing"},
+
+	{"GET", "/api/options"},
+	{"PUT", "/api/options"},
+	{"GET", "/api/system/status"},
+	{"GET", "/api/system/performance"},
 }

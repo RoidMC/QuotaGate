@@ -1,13 +1,13 @@
 package authz_test
 
 import (
+	"context"
 	"os"
 	"testing"
 
-	"github.com/casbin/casbin/v3"
-	"github.com/casbin/casbin/v3/model"
 	"github.com/glebarez/sqlite"
 	"github.com/roidmc/quotagate/internal/authz"
+	"github.com/roidmc/quotagate/internal/model"
 	"gorm.io/gorm"
 )
 
@@ -20,79 +20,71 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func setupInMemoryEnforcer(t *testing.T, modelStr string) *casbin.Enforcer {
+func setupTestManager(t *testing.T) *authz.AuthzManager {
 	t.Helper()
-	m, err := model.NewModelFromString(modelStr)
-	if err != nil {
-		t.Fatalf("failed to create model: %v", err)
+	m := setupTestManagerWithABAC(t, false)
+	if err := m.InitRoleRegistry(context.Background(), authz.DefaultSystemRoles()); err != nil {
+		t.Fatalf("failed to init role registry: %v", err)
 	}
-	e, err := casbin.NewEnforcer(m)
-	if err != nil {
-		t.Fatalf("failed to create enforcer: %v", err)
+	// Prime the enforcer with sample user-role assignments so that request
+	// subName = userID can resolve to a role via g rules.
+	if _, err := m.AssignUserRole("alice", "admin", ""); err != nil {
+		t.Fatalf("failed to assign alice admin: %v", err)
 	}
-	return e
+	if _, err := m.AssignUserRole("bob", "user", ""); err != nil {
+		t.Fatalf("failed to assign bob user: %v", err)
+	}
+	return m
+}
+
+func setupTestManagerWithABAC(t *testing.T, enableABAC bool) *authz.AuthzManager {
+	t.Helper()
+	db := setupTestDB(t)
+	m, err := authz.NewAuthzManager(db, enableABAC)
+	if err != nil {
+		t.Fatalf("failed to create manager: %v", err)
+	}
+	if err := m.InitDefaultPolicies(); err != nil {
+		t.Fatalf("failed to init default policies: %v", err)
+	}
+	return m
 }
 
 func TestNewAuthzManager(t *testing.T) {
 	db := setupTestDB(t)
-
-	tests := []struct {
-		name    string
-		mode    authz.Mode
-		wantErr bool
-	}{
-		{"RBAC mode", authz.ModeRBAC, false},
-		{"ABAC mode", authz.ModeABAC, false},
-		{"unsupported mode", authz.Mode("unknown"), true},
+	m, err := authz.NewAuthzManager(db, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			m, err := authz.NewAuthzManager(db, tt.mode)
-			if tt.wantErr {
-				if err == nil {
-					t.Error("expected error, got nil")
-				}
-				return
-			}
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			if m == nil {
-				t.Fatal("expected non-nil manager")
-			}
-		})
+	if m == nil {
+		t.Fatal("expected non-nil manager")
 	}
 }
 
 func TestAuthzManager_EnforceRBAC(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
-	if err != nil {
-		t.Fatalf("failed to create manager: %v", err)
-	}
+	m := setupTestManager(t)
 
-	_, _ = m.AddPolicy("admin", "/api/v1/users", "GET")
-	_, _ = m.AddRoleForUser("alice", "admin")
-
+	// Default system policy: admin can GET /api/users.
 	tests := []struct {
 		name     string
 		user     string
+		roles    []string
 		path     string
 		method   string
 		expected bool
 	}{
-		{"admin user allowed", "alice", "/api/v1/users", "GET", true},
-		{"direct role allowed", "admin", "/api/v1/users", "GET", true},
-		{"wrong method denied", "alice", "/api/v1/users", "POST", false},
-		{"wrong path denied", "alice", "/api/v1/other", "GET", false},
-		{"unknown user denied", "bob", "/api/v1/users", "GET", false},
-		{"anonymous denied", "anonymous", "/api/v1/users", "GET", false},
+		{"admin user allowed", "alice", []string{"admin"}, "/api/users", "GET", true},
+		{"direct admin role allowed", "admin", []string{"admin"}, "/api/users", "GET", true},
+		{"wrong method denied", "alice", []string{"admin"}, "/api/users/{id}", "POST", false},
+		{"wrong path denied", "alice", []string{"admin"}, "/api/v1/other", "GET", false},
+		{"unknown user denied", "bob", []string{"unknown"}, "/api/users", "GET", false},
+		{"anonymous denied on admin route", "anonymous", []string{"anonymous"}, "/api/users", "GET", false},
+		{"user self-service allowed", "bob", []string{"user"}, "/api/my-account", "GET", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := m.EnforceRBAC(tt.user, tt.path, tt.method)
+			got, err := m.EnforceRBAC(context.Background(), "", tt.user, tt.roles, tt.method, tt.path, "*")
 			if err != nil {
 				t.Fatalf("EnforceRBAC error: %v", err)
 			}
@@ -103,70 +95,69 @@ func TestAuthzManager_EnforceRBAC(t *testing.T) {
 	}
 }
 
-func TestAuthzManager_RoleManagement(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
+func TestAuthzManager_RoleInheritance(t *testing.T) {
+	m := setupTestManager(t)
+
+	// admin inherits user via DefaultSystemRoles, so admin can access user routes.
+	allowed, err := m.EnforceRBAC(context.Background(), "", "alice", []string{"admin"}, "GET", "/api/my-account", "*")
 	if err != nil {
-		t.Fatalf("failed to create manager: %v", err)
+		t.Fatalf("EnforceRBAC error: %v", err)
+	}
+	if !allowed {
+		t.Error("admin should inherit user and access /api/my-account")
+	}
+}
+
+func TestRoleRegistry_GetInheritanceRules_MergesSystemAndTenantDomains(t *testing.T) {
+	registry := authz.NewRoleRegistry()
+	defs := []model.RoleDefinition{
+		{Name: "user", IsSystem: true, InheritedRoles: nil},
+		{Name: "admin", IsSystem: true, InheritedRoles: []string{"user"}},
+		{Name: "tenant-admin", TenantID: "tenant-a", InheritedRoles: []string{"user"}},
+		{Name: "tenant-manager", TenantID: "tenant-a", InheritedRoles: []string{"tenant-admin"}},
+	}
+	if err := registry.Load(context.Background(), defs); err != nil {
+		t.Fatalf("Load error: %v", err)
 	}
 
-	t.Run("add and get roles", func(t *testing.T) {
-		_, err := m.AddRoleForUser("alice", "admin")
-		if err != nil {
-			t.Fatalf("AddRoleForUser error: %v", err)
-		}
+	rules := registry.GetInheritanceRules("tenant-a")
 
-		roles, err := m.GetRolesForUser("alice")
-		if err != nil {
-			t.Fatalf("GetRolesForUser error: %v", err)
-		}
-		if len(roles) != 1 || roles[0] != "admin" {
-			t.Errorf("expected roles [admin], got %v", roles)
-		}
-	})
-
-	t.Run("get users for role", func(t *testing.T) {
-		users, err := m.GetUsersForRole("admin")
-		if err != nil {
-			t.Fatalf("GetUsersForRole error: %v", err)
-		}
-		found := false
-		for _, u := range users {
-			if u == "alice" {
-				found = true
-				break
+	contains := func(child, parent, domain string) bool {
+		for _, r := range rules {
+			if len(r) == 3 && r[0] == child && r[1] == parent && r[2] == domain {
+				return true
 			}
 		}
-		if !found {
-			t.Errorf("expected alice in admin users, got %v", users)
-		}
-	})
+		return false
+	}
 
-	t.Run("delete role", func(t *testing.T) {
-		_, err := m.DeleteRoleForUser("alice", "admin")
-		if err != nil {
-			t.Fatalf("DeleteRoleForUser error: %v", err)
-		}
+	// System rules are always injected under the unified wildcard domain.
+	if !contains("admin", "user", "*") {
+		t.Error("expected system rule admin -> user in wildcard domain")
+	}
 
-		roles, err := m.GetRolesForUser("alice")
-		if err != nil {
-			t.Fatalf("GetRolesForUser error: %v", err)
+	// Tenant rules are merged with system rules.
+	if !contains("tenant-admin", "user", "tenant-a") {
+		t.Error("expected tenant rule tenant-admin -> user in tenant-a domain")
+	}
+	if !contains("tenant-manager", "tenant-admin", "tenant-a") {
+		t.Error("expected tenant rule tenant-manager -> tenant-admin in tenant-a domain")
+	}
+
+	// Requesting the wildcard system domain should not include tenant rules.
+	systemOnly := registry.GetInheritanceRules("*")
+	for _, r := range systemOnly {
+		if len(r) == 3 && r[2] != "*" {
+			t.Errorf("system domain should not contain tenant rules, got %v", r)
 		}
-		if len(roles) != 0 {
-			t.Errorf("expected no roles, got %v", roles)
-		}
-	})
+	}
 }
 
 func TestAuthzManager_PolicyManagement(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
-	if err != nil {
-		t.Fatalf("failed to create manager: %v", err)
-	}
+	m := setupTestManager(t)
 
 	t.Run("add and check policy", func(t *testing.T) {
-		added, err := m.AddPolicy("editor", "/api/v1/posts", "GET")
+		added, err := m.AddPolicy("*", "editor", "GET", "/api/v1/posts", "*")
 		if err != nil {
 			t.Fatalf("AddPolicy error: %v", err)
 		}
@@ -174,7 +165,7 @@ func TestAuthzManager_PolicyManagement(t *testing.T) {
 			t.Error("expected policy to be added")
 		}
 
-		has, err := m.HasPolicy("editor", "/api/v1/posts", "GET")
+		has, err := m.HasPolicy("*", "editor", "GET", "/api/v1/posts", "*")
 		if err != nil {
 			t.Fatalf("HasPolicy error: %v", err)
 		}
@@ -184,7 +175,7 @@ func TestAuthzManager_PolicyManagement(t *testing.T) {
 	})
 
 	t.Run("remove policy", func(t *testing.T) {
-		removed, err := m.RemovePolicy("editor", "/api/v1/posts", "GET")
+		removed, err := m.RemovePolicy("*", "editor", "GET", "/api/v1/posts", "*")
 		if err != nil {
 			t.Fatalf("RemovePolicy error: %v", err)
 		}
@@ -192,7 +183,7 @@ func TestAuthzManager_PolicyManagement(t *testing.T) {
 			t.Error("expected policy to be removed")
 		}
 
-		has, err := m.HasPolicy("editor", "/api/v1/posts", "GET")
+		has, err := m.HasPolicy("*", "editor", "GET", "/api/v1/posts", "*")
 		if err != nil {
 			t.Fatalf("HasPolicy error: %v", err)
 		}
@@ -202,7 +193,6 @@ func TestAuthzManager_PolicyManagement(t *testing.T) {
 	})
 
 	t.Run("get policy", func(t *testing.T) {
-		_, _ = m.AddPolicy("viewer", "/api/v1/items", "GET")
 		policies, err := m.GetPolicy()
 		if err != nil {
 			t.Fatalf("GetPolicy error: %v", err)
@@ -214,16 +204,7 @@ func TestAuthzManager_PolicyManagement(t *testing.T) {
 }
 
 func TestAuthzManager_InitDefaultPolicies(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
-	if err != nil {
-		t.Fatalf("failed to create manager: %v", err)
-	}
-
-	err = m.InitDefaultPolicies()
-	if err != nil {
-		t.Fatalf("InitDefaultPolicies error: %v", err)
-	}
+	m := setupTestManager(t)
 
 	policies, err := m.GetPolicy()
 	if err != nil {
@@ -233,66 +214,27 @@ func TestAuthzManager_InitDefaultPolicies(t *testing.T) {
 		t.Error("expected default policies to be loaded")
 	}
 
-	roles, err := m.GetAllRoles()
+	err = m.InitDefaultPolicies()
 	if err != nil {
-		t.Fatalf("GetAllRoles error: %v", err)
+		t.Fatalf("second InitDefaultPolicies error: %v", err)
 	}
-	if len(roles) == 0 {
-		t.Error("expected some roles")
-	}
-
-	t.Run("idempotent init", func(t *testing.T) {
-		err := m.InitDefaultPolicies()
-		if err != nil {
-			t.Fatalf("second InitDefaultPolicies error: %v", err)
-		}
-	})
 }
 
 func TestAuthzManager_ReloadPolicy(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
-	if err != nil {
-		t.Fatalf("failed to create manager: %v", err)
-	}
+	m := setupTestManager(t)
 
-	err = m.ReloadPolicy()
-	if err != nil {
+	if err := m.ReloadPolicy(); err != nil {
 		t.Fatalf("ReloadPolicy error: %v", err)
 	}
 }
 
-func TestAuthzManager_Enforce(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
-	if err != nil {
-		t.Fatalf("failed to create manager: %v", err)
-	}
-
-	_, _ = m.AddPolicy("admin", "/api/v1/users", "GET")
-
-	got, err := m.Enforce("admin", "/api/v1/users", "GET")
-	if err != nil {
-		t.Fatalf("Enforce error: %v", err)
-	}
-	if !got {
-		t.Error("expected allowed")
-	}
-}
-
 func TestAuthzManager_ConcurrentAccess(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
-	if err != nil {
-		t.Fatalf("failed to create manager: %v", err)
-	}
-
-	_, _ = m.AddPolicy("user", "/api/v1/resource", "GET")
+	m := setupTestManager(t)
 
 	done := make(chan bool, 100)
 	for i := 0; i < 100; i++ {
 		go func() {
-			_, err := m.EnforceRBAC("user", "/api/v1/resource", "GET")
+			_, err := m.EnforceRBAC(context.Background(), "", "alice", []string{"admin"}, "GET", "/api/users", "*")
 			if err != nil {
 				t.Errorf("concurrent EnforceRBAC error: %v", err)
 			}
@@ -305,201 +247,121 @@ func TestAuthzManager_ConcurrentAccess(t *testing.T) {
 	}
 }
 
-func TestMain(m *testing.M) {
-	code := m.Run()
-	os.Exit(code)
-}
-
 func TestAuthzManager_Close(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
-	if err != nil {
-		t.Fatalf("failed to create manager: %v", err)
-	}
+	m := setupTestManager(t)
 
-	err = m.Close()
-	if err != nil {
+	if err := m.Close(); err != nil {
 		t.Fatalf("Close error: %v", err)
 	}
 }
 
 func TestAuthzManager_ABAC(t *testing.T) {
-	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, authz.ModeABAC)
-	if err != nil {
-		t.Fatalf("failed to create ABAC manager: %v", err)
-	}
-
-	// ABAC policies use sub_rule (boolean expression) instead of direct sub match
-	// Policy format: p = sub_rule, obj, act
-	// Matcher: m = eval(p.sub_rule) && r.obj == p.obj && r.act == p.act
+	m := setupTestManagerWithABAC(t, true)
 
 	t.Run("basic role-based ABAC rule", func(t *testing.T) {
-		// Policy: if sub == "admin", allow access to /api/admin
-		added, err := m.AddPolicy(`r.sub == "admin"`, "/api/admin", "GET")
+		added, err := m.AddABACPolicy(`r.sub.ID == "admin"`, "", "GET", "/api/admin", `r.obj.Owner == ""`)
 		if err != nil {
-			t.Fatalf("AddPolicy error: %v", err)
+			t.Fatalf("AddABACPolicy error: %v", err)
 		}
 		if !added {
 			t.Error("expected policy to be added")
 		}
 
-		tests := []struct {
-			name     string
-			sub      string
-			obj      string
-			act      string
-			expected bool
-		}{
-			{"admin can access admin path", "admin", "/api/admin", "GET", true},
-			{"user cannot access admin path", "user", "/api/admin", "GET", false},
-			{"admin cannot access other path", "admin", "/api/other", "GET", false},
-			{"admin cannot POST to admin path", "admin", "/api/admin", "POST", false},
+		sub := authz.Subject{ID: "admin", Owner: "", Roles: []interface{}{"admin"}, Attrs: map[string]any{}}
+		obj := authz.Object{Owner: "", Name: "/api/admin", Attrs: map[string]any{}}
+
+		got, err := m.EnforceABAC(context.Background(), sub, "", "GET", "/api/admin", obj)
+		if err != nil {
+			t.Fatalf("EnforceABAC error: %v", err)
+		}
+		if !got {
+			t.Error("expected admin allowed via ABAC")
 		}
 
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				got, err := m.Enforce(tt.sub, tt.obj, tt.act)
-				if err != nil {
-					t.Fatalf("Enforce error: %v", err)
-				}
-				if got != tt.expected {
-					t.Errorf("Enforce(%q, %q, %q) = %v, want %v", tt.sub, tt.obj, tt.act, got, tt.expected)
-				}
-			})
+		sub.ID = "user"
+		sub.Roles = []interface{}{"user"}
+		got, err = m.EnforceABAC(context.Background(), sub, "", "GET", "/api/admin", obj)
+		if err != nil {
+			t.Fatalf("EnforceABAC error: %v", err)
+		}
+		if got {
+			t.Error("expected user denied via ABAC")
 		}
 	})
 
-	t.Run("ABAC with multiple rules", func(t *testing.T) {
-		// Policy: if sub == "editor", allow POST to /api/posts
-		added, err := m.AddPolicy(`r.sub == "editor"`, "/api/posts", "POST")
+	t.Run("ABAC domain isolation", func(t *testing.T) {
+		_, _ = m.AddABACPolicy(`r.sub.Owner == "tenant-a"`, "tenant-a", "GET", "/api/resource", `r.obj.Owner == "tenant-a"`)
+
+		sub := authz.Subject{ID: "admin", Owner: "tenant-a", Roles: []interface{}{"admin"}, Attrs: map[string]any{}}
+		obj := authz.Object{Owner: "tenant-a", Name: "/api/resource", Attrs: map[string]any{}}
+
+		got, err := m.EnforceABAC(context.Background(), sub, "tenant-a", "GET", "/api/resource", obj)
 		if err != nil {
-			t.Fatalf("AddPolicy error: %v", err)
+			t.Fatalf("EnforceABAC error: %v", err)
 		}
-		if !added {
-			t.Error("expected policy to be added")
+		if !got {
+			t.Error("expected tenant-a admin allowed")
 		}
 
-		// Policy: if sub == "viewer", allow GET to /api/posts
-		added, err = m.AddPolicy(`r.sub == "viewer"`, "/api/posts", "GET")
+		got, err = m.EnforceABAC(context.Background(), sub, "tenant-b", "GET", "/api/resource", obj)
 		if err != nil {
-			t.Fatalf("AddPolicy error: %v", err)
+			t.Fatalf("EnforceABAC error: %v", err)
 		}
-
-		tests := []struct {
-			name     string
-			sub      string
-			obj      string
-			act      string
-			expected bool
-		}{
-			{"editor can POST", "editor", "/api/posts", "POST", true},
-			{"editor cannot GET", "editor", "/api/posts", "GET", false},
-			{"viewer can GET", "viewer", "/api/posts", "GET", true},
-			{"viewer cannot POST", "viewer", "/api/posts", "POST", false},
-			{"guest cannot access", "guest", "/api/posts", "GET", false},
-		}
-
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				got, err := m.Enforce(tt.sub, tt.obj, tt.act)
-				if err != nil {
-					t.Fatalf("Enforce error: %v", err)
-				}
-				if got != tt.expected {
-					t.Errorf("Enforce(%q, %q, %q) = %v, want %v", tt.sub, tt.obj, tt.act, got, tt.expected)
-				}
-			})
+		if got {
+			t.Error("expected tenant-b admin denied by domain isolation")
 		}
 	})
 
-	t.Run("ABAC policy management", func(t *testing.T) {
-		added, err := m.AddPolicy(`r.sub == "test_editor"`, "/api/test_posts", "POST")
+	t.Run("ABAC rejects constant truth rule", func(t *testing.T) {
+		_, err := m.AddABACPolicy("true", "", "GET", "/api/x", "true")
+		if err == nil {
+			t.Error("expected error for constant truth sub_rule")
+		}
+	})
+
+	t.Run("ABAC allows Attrs field", func(t *testing.T) {
+		added, err := m.AddABACPolicy(`r.sub.Attrs.level == "senior"`, "", "GET", "/api/attrs", `r.obj.Owner == ""`)
 		if err != nil {
-			t.Fatalf("AddPolicy error: %v", err)
+			t.Fatalf("AddABACPolicy with Attrs failed: %v", err)
 		}
 		if !added {
 			t.Error("expected policy to be added")
 		}
 
-		has, err := m.HasPolicy(`r.sub == "test_editor"`, "/api/test_posts", "POST")
+		sub := authz.Subject{ID: "u1", Owner: "", Roles: []interface{}{"user"}, Attrs: map[string]any{"level": "senior"}}
+		obj := authz.Object{Owner: "", Name: "/api/attrs", Attrs: map[string]any{}}
+		got, err := m.EnforceABAC(context.Background(), sub, "", "GET", "/api/attrs", obj)
 		if err != nil {
-			t.Fatalf("HasPolicy error: %v", err)
+			t.Fatalf("EnforceABAC error: %v", err)
 		}
-		if !has {
-			t.Error("expected policy to exist")
-		}
-
-		removed, err := m.RemovePolicy(`r.sub == "test_editor"`, "/api/test_posts", "POST")
-		if err != nil {
-			t.Fatalf("RemovePolicy error: %v", err)
-		}
-		if !removed {
-			t.Error("expected policy to be removed")
-		}
-
-		has, err = m.HasPolicy(`r.sub == "test_editor"`, "/api/test_posts", "POST")
-		if err != nil {
-			t.Fatalf("HasPolicy error: %v", err)
-		}
-		if has {
-			t.Error("expected policy to not exist after removal")
+		if !got {
+			t.Error("expected senior user allowed via Attrs rule")
 		}
 	})
 }
 
-func TestAuthzManager_ABAC_Vs_RBAC(t *testing.T) {
-	t.Run("RBAC supports role inheritance", func(t *testing.T) {
-		db := setupTestDB(t)
-		m, err := authz.NewAuthzManager(db, authz.ModeRBAC)
-		if err != nil {
-			t.Fatalf("failed to create RBAC manager: %v", err)
-		}
+func TestAuthzManager_TempEnforcerNoGRulePollution(t *testing.T) {
+	m := setupTestManager(t)
 
-		_, _ = m.AddPolicy("member", "/api/content", "READ")
-		_, _ = m.AddRoleForUser("alice", "member")
+	// alice has admin role; bob has no roles.
+	aliceAllowed, err := m.EnforceRBAC(context.Background(), "", "alice", []string{"admin"}, "GET", "/api/users", "*")
+	if err != nil {
+		t.Fatalf("EnforceRBAC error: %v", err)
+	}
+	if !aliceAllowed {
+		t.Error("alice should be allowed")
+	}
 
-		allowed, err := m.Enforce("alice", "/api/content", "READ")
-		if err != nil {
-			t.Fatalf("Enforce error: %v", err)
-		}
-		if !allowed {
-			t.Error("RBAC: alice (member) should be able to READ via role inheritance")
-		}
-	})
+	bobAllowed, err := m.EnforceRBAC(context.Background(), "", "bob", []string{}, "GET", "/api/users", "*")
+	if err != nil {
+		t.Fatalf("EnforceRBAC error: %v", err)
+	}
+	if bobAllowed {
+		t.Error("bob should be denied; temporary enforcer must not leak alice's g rules")
+	}
+}
 
-	t.Run("ABAC uses expression evaluation without inheritance", func(t *testing.T) {
-		db := setupTestDB(t)
-		m, err := authz.NewAuthzManager(db, authz.ModeABAC)
-		if err != nil {
-			t.Fatalf("failed to create ABAC manager: %v", err)
-		}
-
-		_, _ = m.AddPolicy(`r.sub == "vip"`, "/api/premium", "READ")
-
-		allowed, err := m.Enforce("vip", "/api/premium", "READ")
-		if err != nil {
-			t.Fatalf("Enforce error: %v", err)
-		}
-		if !allowed {
-			t.Error("ABAC: vip user should be able to READ premium content")
-		}
-
-		allowed, err = m.Enforce("regular", "/api/premium", "READ")
-		if err != nil {
-			t.Fatalf("Enforce error: %v", err)
-		}
-		if allowed {
-			t.Error("ABAC: regular user should NOT be able to READ premium content")
-		}
-
-		_, _ = m.AddRoleForUser("alice", "vip")
-		allowed, err = m.Enforce("alice", "/api/premium", "READ")
-		if err != nil {
-			t.Fatalf("Enforce error: %v", err)
-		}
-		if allowed {
-			t.Error("ABAC: AddRoleForUser should NOT affect ABAC (no inheritance)")
-		}
-	})
+func TestMain(m *testing.M) {
+	code := m.Run()
+	os.Exit(code)
 }
