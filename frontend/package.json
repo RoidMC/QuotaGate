@@ -27,27 +27,27 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxt/icon": "2.2.3",
+    "@nuxt/icon": "2.3.1",
     "@nuxt/image": "2.0.0",
     "@nuxtjs/color-mode": "4.0.1",
-    "@nuxtjs/i18n": "10.4.0",
-    "@nuxtjs/robots": "^6.1.1",
-    "@nuxtjs/sitemap": "^8.2.1",
+    "@nuxtjs/i18n": "10.4.1",
+    "@nuxtjs/robots": "^6.1.2",
+    "@nuxtjs/sitemap": "^8.2.2",
     "@pinia/nuxt": "0.11.3",
-    "@unocss/nuxt": "^66.7.2",
-    "animejs": "^4.4.1",
+    "@unocss/nuxt": "^66.7.5",
+    "animejs": "^4.5.0",
     "dotenv": "^17.4.2",
     "echarts": "^6.1.0",
     "js-sha3": "^0.9.3",
     "nuxt": "^4.4.8",
     "pinia": "^3.0.4",
     "qrcode": "^1.5.4",
-    "reka-ui": "^2.9.10"
+    "reka-ui": "^2.10.1"
   },
   "devDependencies": {
     "@iconify-icons/logos": "^1.2.36",
     "@nuxtjs/eslint-module": "4.1.0",
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.1.1",
     "@types/qrcode": "^1.5.6",
     "sass": "^1.101.0"
   }
