@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 RoidMC
-// SPDX-License-Identifier: MIT
-
 package authz_test
 
 import (
