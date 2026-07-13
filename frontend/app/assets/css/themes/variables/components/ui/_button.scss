@@ -1,0 +1,20 @@
+:root {
+    --h-button-width: auto;
+    --h-button-height: 2rem;
+    --h-button-padding: 0 1rem;
+    --h-button-font-size: var(--horizon-text-size-sm);
+    --h-button-border-radius: var(--horizon-border-radius-none);
+    --h-button-bg: var(--horizon-surface-elevated);
+    --h-button-text: var(--horizon-text);
+    --h-button-border: transparent;
+    --h-button-icon-gap: 0.3rem;
+    --h-button-icon-size: var(--horizon-icon-size-base);
+    --h-button-icon-color: currentColor;
+
+    --h-button-hover-bg: var(--horizon-surface-sunken);
+    --h-button-hover-text: var(--horizon-text);
+
+    --h-button-disabled-opacity: 0.5;
+    --h-button-active-opacity: 0.8;
+    --h-button-transition: background-color 0.2s, color 0.2s, border-color 0.2s, opacity 0.2s;
+}

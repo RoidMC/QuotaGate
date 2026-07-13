@@ -13,12 +13,12 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   text: '',
   position: 'center',
-  color: '#444',
-  textColor: '#888',
-  thickness: '1px',
-  margin: '0.8rem 0',
-  textPadding: '0 0.25rem',
-  fontSize: '0.8rem'
+  color: 'var(--h-divider-color)',
+  textColor: 'var(--h-divider-text-color)',
+  thickness: 'var(--h-divider-thickness)',
+  margin: 'var(--h-divider-margin)',
+  textPadding: 'var(--h-divider-text-padding)',
+  fontSize: 'var(--h-divider-text-font-size)'
 })
 
 const lineStyle = {
@@ -67,7 +67,7 @@ const dividerStyle = {
 
   &-line {
     flex: 1;
-    min-width: 10px;
+    min-width: var(--h-divider-line-min-width);
   }
 
   &-text {

@@ -157,7 +157,7 @@ const initScrollContent = () => {
     // 标记准备就绪并淡入显示
     isReady.value = true
     nextTick(() => {
-      wrapper.style.transition = 'opacity 0.3s ease'
+      wrapper.style.transition = 'var(--h-scrolling-text-opacity-transition)'
       wrapper.style.opacity = '1'
     })
   }
@@ -288,7 +288,7 @@ onUnmounted(() => {
 
 <template>
   <div ref="wrapperRef" class="scrolling-text-wrapper"
-    :style="{ opacity: isReady ? 1 : 0, transition: 'opacity 0.3s ease' }">
+    :style="{ opacity: isReady ? 1 : 0, transition: 'var(--h-scrolling-text-opacity-transition)' }">
     <div ref="containerRef" class="scrolling-text-container">
       <!-- 内容将在脚本中动态生成 -->
     </div>

@@ -56,3 +56,68 @@ const isImageUrl = (icon: string) =>
     </template>
   </button>
 </template>
+
+<style scoped lang="scss">
+.ui-button {
+  width: var(--h-button-width);
+  height: var(--h-button-height);
+  padding: var(--h-button-padding);
+  font-size: var(--h-button-font-size);
+  border-radius: var(--h-button-border-radius);
+  background-color: var(--h-button-bg);
+  color: var(--h-button-text);
+  border: 1px solid var(--h-button-border);
+  gap: var(--h-button-icon-gap);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  cursor: pointer;
+  transition: var(--h-button-transition);
+  box-sizing: border-box;
+  white-space: nowrap;
+  user-select: none;
+
+  &:hover:not(:disabled) {
+    background-color: var(--h-button-hover-bg);
+    color: var(--h-button-hover-text);
+  }
+
+  &:active:not(:disabled) {
+    opacity: var(--h-button-active-opacity);
+  }
+
+  &:disabled {
+    opacity: var(--h-button-disabled-opacity);
+    cursor: not-allowed;
+  }
+}
+
+.ui-button-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: var(--h-button-icon-size);
+  color: var(--h-button-icon-color);
+
+  img {
+    width: var(--h-button-icon-size);
+    height: var(--h-button-icon-size);
+    object-fit: contain;
+  }
+}
+
+.ui-button-text {
+  display: flex;
+  align-items: center;
+}
+
+.ui-button-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: h-spin 1s linear infinite;
+}
+</style>

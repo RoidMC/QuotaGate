@@ -65,28 +65,28 @@ const handleInput = (event: Event) => {
 .ui-input-wrapper {
   display: flex;
   flex-direction: column;
-  gap: var(--input-label-gap, 6px);
-  width: var(--input-wrapper-width, 100%);
+  gap: var(--h-input-label-gap);
+  width: var(--h-input-wrapper-width);
 }
 
 .ui-input-label {
-  font-size: var(--input-label-font-size, 14px);
-  color: var(--input-label-color, var(--horizon-text-secondary));
+  font-size: var(--h-input-label-font-size);
+  color: var(--h-input-label-color);
 }
 
 .ui-input-container {
   display: flex;
   align-items: center;
-  width: var(--input-width, 100%);
-  height: var(--input-height, 2rem);
-  border-radius: var(--input-border-radius, 0);
-  background-color: var(--input-bg, var(--horizon-surface-bg-80));
-  border: 1px solid var(--input-border, var(--horizon-border));
-  transition: border-color 0.2s;
+  width: var(--h-input-width);
+  height: var(--h-input-height);
+  border-radius: var(--h-input-border-radius);
+  background-color: var(--h-input-bg);
+  border: 1px solid var(--h-input-border);
+  transition: var(--h-input-transition);
   box-sizing: border-box;
 
   &:focus-within {
-    border-color: var(--input-focus-border, var(--horizon-text));
+    border-color: var(--h-input-focus-border);
   }
 }
 
@@ -95,28 +95,28 @@ const handleInput = (event: Event) => {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  font-size: var(--input-icon-size, 18px);
-  color: var(--input-icon-color, var(--horizon-text-secondary));
+  font-size: var(--h-input-icon-size);
+  color: var(--h-input-icon-color);
 
   &--prefix {
-    margin-left: var(--input-icon-gap, 8px);
-    margin-right: var(--input-icon-gap, 8px);
-    opacity: var(--input-prefix-opacity, 1);
+    margin-left: var(--h-input-icon-gap);
+    margin-right: var(--h-input-icon-gap);
+    opacity: var(--h-input-prefix-opacity);
   }
 
   &--suffix {
-    margin-left: var(--input-icon-gap, 8px);
-    margin-right: var(--input-icon-gap, 8px);
-    opacity: var(--input-suffix-opacity, 1);
+    margin-left: var(--h-input-icon-gap);
+    margin-right: var(--h-input-icon-gap);
+    opacity: var(--h-input-suffix-opacity);
   }
 }
 
 .ui-input {
   width: 100%;
   height: 100%;
-  padding: var(--input-padding, 0 0.5rem);
-  font-size: var(--input-font-size, 0.8rem);
-  color: var(--input-text, var(--horizon-text));
+  padding: var(--h-input-padding);
+  font-size: var(--h-input-font-size);
+  color: var(--h-input-text);
   border: none;
   outline: none;
   background: transparent;
@@ -125,11 +125,11 @@ const handleInput = (event: Event) => {
   box-sizing: border-box;
 
   &::placeholder {
-    color: var(--input-placeholder-color, var(--horizon-text-secondary));
+    color: var(--h-input-placeholder-color);
   }
 
   &:disabled {
-    opacity: 0.5;
+    opacity: var(--h-input-disabled-opacity);
     cursor: not-allowed;
   }
 

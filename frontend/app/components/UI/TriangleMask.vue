@@ -8,9 +8,9 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   position: 'top-right',
-  size: '60px',
-  backgroundColor: '#333',
-  cursor: 'pointer'
+  size: 'var(--h-triangle-mask-size)',
+  backgroundColor: 'var(--h-triangle-mask-bg)',
+  cursor: 'var(--h-triangle-mask-cursor)'
 })
 
 const emit = defineEmits<{
@@ -60,10 +60,10 @@ const handleClick = (event: MouseEvent) => {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: opacity 0.2s;
+  transition: var(--h-triangle-mask-transition);
 
   &:hover {
-    opacity: 0.8;
+    opacity: var(--h-triangle-mask-hover-opacity);
   }
 
   &-content {
