@@ -1,0 +1,200 @@
+/**
+ * Horizon Animation
+ * 通用动画库：keyframes + Vue Transition 类
+ *
+ * @author  RoidMC
+ * @link    https://wwww.roidmc.com/
+ * @since   1.0.0
+ *
+ * @version 1.0.0
+ */
+
+// ==================== Keyframes ====================
+
+// 遮罩淡入
+@keyframes h-overlay-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+// 遮罩淡出
+@keyframes h-overlay-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+// 弹窗缩放入（居中定位）
+@keyframes h-dialog-scale-in {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+// 弹窗缩放出（居中定位）
+@keyframes h-dialog-scale-out {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+}
+
+// 弹窗缩放入（普通定位）
+@keyframes h-scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+// 弹窗缩放出（普通定位）
+@keyframes h-scale-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+}
+
+// 淡入
+@keyframes h-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+// 淡出
+@keyframes h-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+// 旋转（loading）
+@keyframes h-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+// ==================== Vue Transition Classes ====================
+
+// 淡入淡出
+.h-fade-enter-active,
+.h-fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.h-fade-enter-from,
+.h-fade-leave-to {
+    opacity: 0;
+}
+
+// 纵向滑动（列表/内容切换）
+.h-slide-y-enter-active,
+.h-slide-y-leave-active {
+    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.h-slide-y-leave-active {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 0;
+}
+
+.h-slide-y-enter-from {
+    opacity: 0;
+    transform: translateY(12px);
+}
+
+.h-slide-y-leave-to {
+    opacity: 0;
+    transform: translateY(-12px);
+}
+
+// 横向滑动（视图切换：列表 ↔ 详情）
+.h-slide-x-enter-active,
+.h-slide-x-leave-active {
+    transition: all 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.h-slide-x-enter-from {
+    opacity: 0;
+    transform: translateX(12px);
+}
+
+.h-slide-x-leave-to {
+    opacity: 0;
+    transform: translateX(-12px);
+}
+
+// 弹窗遮罩淡入淡出（Vue Transition）
+.h-overlay-enter-active,
+.h-overlay-leave-active {
+    transition: opacity 0.2s ease-out;
+}
+
+.h-overlay-enter-from,
+.h-overlay-leave-to {
+    opacity: 0;
+}
+
+// 弹窗内容缩放（Vue Transition，配合 fixed + translate(-50%, -50%) 使用）
+.h-dialog-enter-active {
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.h-dialog-leave-active {
+    transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+}
+
+.h-dialog-enter-from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+}
+
+.h-dialog-leave-to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+}
+
+// 弹窗内容缩放（Vue Transition，普通定位）
+.h-scale-in-enter-active {
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.h-scale-in-leave-active {
+    transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+}
+
+.h-scale-in-enter-from {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.h-scale-in-leave-to {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+// 从上滑入（下拉菜单等）
+.h-slide-down-enter-active,
+.h-slide-down-leave-active {
+    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.h-slide-down-enter-from {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+
+.h-slide-down-leave-to {
+    opacity: 0;
+    transform: translateY(-8px);
+}
+
+// 从下滑入（toast、snackbar 等）
+.h-slide-up-enter-active,
+.h-slide-up-leave-active {
+    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.h-slide-up-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.h-slide-up-leave-to {
+    opacity: 0;
+    transform: translateY(8px);
+}

@@ -16,5 +16,7 @@
 @use "./variables/index.scss" as HorizonVariables;
 // Mixins
 @use "./mixins/index.scss" as HorizonMixins;
+// Animation
+@use "./animation/index.scss" as HorizonAnimation;
 // Components
 @use "./components/index.scss" as HorizonComponents;
