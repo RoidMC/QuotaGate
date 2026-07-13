@@ -1,0 +1,138 @@
+:root {
+    --horizon-font-family: "DingTalk JinBuTi", "HarmonyOS_Regular";
+    --horizon-font-harmony: "HarmonyOS_Regular";
+    --horizon-font-dingtalk: "DingTalk JinBuTi";
+
+    /* Common - 公共变量 */
+    --horizon-common-blur-xs: 6px;
+    --horizon-common-blur-sm: 8px;
+    --horizon-common-blur-base: 10px;
+
+    /* Font Sizes - 文本和图标大小 */
+    --horizon-text-size-xs: 0.75rem;
+    --horizon-text-size-sm: 0.875rem;
+    --horizon-text-size-base: 1rem;
+    --horizon-text-size-lg: 1.25rem;
+    --horizon-text-size-xl: 1.5rem;
+    --horizon-icon-size-xs: var(--horizon-text-size-xs);
+    --horizon-icon-size-sm: var(--horizon-text-size-sm);
+    --horizon-icon-size-base: var(--horizon-text-size-base);
+    --horizon-icon-size-lg: var(--horizon-text-size-lg);
+    --horizon-icon-size-xl: var(--horizon-text-size-xl);
+
+    /* Border Radius - 边框圆角大小 */
+    --horizon-border-radius-none: 0;
+    --horizon-border-radius-xs: 0.25rem;
+    --horizon-border-radius-sm: 0.5rem;
+    --horizon-border-radius-base: 0.75rem;
+    --horizon-border-radius-lg: 1.25rem;
+    --horizon-border-radius-xl: 1.5rem;
+
+    /* Primary - 主操作色（黄色） */
+    --horizon-primary: var(--horizon-color-yellow-300);
+    --horizon-primary-50: var(--horizon-color-yellow-50);
+    --horizon-primary-100: var(--horizon-color-yellow-100);
+    --horizon-primary-200: var(--horizon-color-yellow-200);
+    --horizon-primary-300: var(--horizon-color-yellow-300);
+    --horizon-primary-400: var(--horizon-color-yellow-400);
+    --horizon-primary-500: var(--horizon-color-yellow-500);
+    --horizon-primary-600: var(--horizon-color-yellow-600);
+    --horizon-primary-700: var(--horizon-color-yellow-700);
+    --horizon-primary-800: var(--horizon-color-yellow-800);
+    --horizon-primary-900: var(--horizon-color-yellow-900);
+    --horizon-primary-950: var(--horizon-color-yellow-950);
+
+    /* Primary 变体 */
+    --horizon-primary-soft: color-mix(in srgb, var(--horizon-primary) 15%, transparent);
+    --horizon-primary-hover: var(--horizon-color-yellow-600);
+    --horizon-primary-active: var(--horizon-color-yellow-700);
+    --horizon-primary-strong: var(--horizon-color-yellow-700);
+
+    /* 调色盘 - 界面基础色 */
+    --horizon-surface: var(--horizon-color-stone-50);
+    --horizon-surface-solid: var(--horizon-color-stone-50);
+    --horizon-surface-elevated: var(--horizon-color-stone-200);
+    --horizon-surface-sunken: var(--horizon-color-stone-300);
+    --horizon-surface-inverse: var(--horizon-color-stone-950);
+
+    --horizon-text: var(--horizon-color-stone-950);
+    --horizon-text-secondary: var(--horizon-color-stone-600);
+    --horizon-text-inverse: var(--horizon-color-stone-50);
+
+    /* 语义色 */
+    --horizon-success: var(--horizon-color-green-500);
+    --horizon-success-soft: color-mix(in srgb, var(--horizon-success) 15%, transparent);
+    --horizon-success-hover: var(--horizon-color-green-700);
+    --horizon-success-active: var(--horizon-color-green-800);
+    --horizon-success-strong: var(--horizon-color-green-700);
+
+    --horizon-warning: var(--horizon-color-yellow-500);
+    --horizon-warning-soft: color-mix(in srgb, var(--horizon-warning) 15%, transparent);
+    --horizon-warning-hover: var(--horizon-color-yellow-700);
+    --horizon-warning-active: var(--horizon-color-yellow-800);
+    --horizon-warning-strong: var(--horizon-color-yellow-700);
+
+    --horizon-error: var(--horizon-color-red-500);
+    --horizon-error-soft: color-mix(in srgb, var(--horizon-error) 15%, transparent);
+    --horizon-error-hover: var(--horizon-color-red-700);
+    --horizon-error-active: var(--horizon-color-red-800);
+    --horizon-error-strong: var(--horizon-color-red-700);
+
+    --horizon-info: var(--horizon-color-blue-500);
+    --horizon-info-soft: color-mix(in srgb, var(--horizon-info) 15%, transparent);
+    --horizon-info-hover: var(--horizon-color-blue-700);
+    --horizon-info-active: var(--horizon-color-blue-800);
+    --horizon-info-strong: var(--horizon-color-blue-700);
+
+    /* 衍生色 - 使用 color-mix 自动生成 */
+    --horizon-surface-bg-95: color-mix(in srgb, var(--horizon-surface) 95%, transparent);
+    --horizon-surface-bg-90: color-mix(in srgb, var(--horizon-surface) 90%, transparent);
+    --horizon-surface-bg-85: color-mix(in srgb, var(--horizon-surface) 85%, transparent);
+    --horizon-surface-bg-80: color-mix(in srgb, var(--horizon-surface) 80%, transparent);
+    --horizon-surface-bg-70: color-mix(in srgb, var(--horizon-surface) 70%, transparent);
+    --horizon-surface-bg-60: color-mix(in srgb, var(--horizon-surface) 60%, transparent);
+    --horizon-surface-bg-50: color-mix(in srgb, var(--horizon-surface) 50%, transparent);
+    --horizon-surface-bg-40: color-mix(in srgb, var(--horizon-surface) 40%, transparent);
+    --horizon-surface-bg-30: color-mix(in srgb, var(--horizon-surface) 30%, transparent);
+    --horizon-surface-bg-20: color-mix(in srgb, var(--horizon-surface) 20%, transparent);
+    --horizon-surface-bg-10: color-mix(in srgb, var(--horizon-surface) 10%, transparent);
+    --horizon-border: color-mix(in srgb, var(--horizon-text) 10%, transparent);
+    --horizon-border-strong: color-mix(in srgb, var(--horizon-text) 20%, transparent);
+    --horizon-shadow: color-mix(in srgb, var(--horizon-surface) 15%, transparent);
+    --horizon-overlay: color-mix(in srgb, var(--horizon-surface) 5%, transparent);
+    --horizon-interactive: color-mix(in srgb, var(--horizon-surface) 50%, transparent);
+    --horizon-interactive-active: color-mix(in srgb, var(--horizon-surface) 5%, transparent);
+}
+
+:root[class="dark"] {
+    --horizon-surface: var(--horizon-color-stone-900);
+    --horizon-surface-solid: var(--horizon-color-stone-900);
+    --horizon-surface-elevated: var(--horizon-color-stone-800);
+    --horizon-surface-sunken: var(--horizon-color-stone-950);
+    --horizon-surface-inverse: var(--horizon-color-stone-50);
+
+    --horizon-text: var(--horizon-color-stone-50);
+    --horizon-text-secondary: var(--horizon-color-stone-400);
+    --horizon-text-inverse: var(--horizon-color-stone-950);
+
+    /* 深色模式下语义色使用更亮的色阶，保证对比度 */
+    --horizon-success: var(--horizon-color-green-400);
+    --horizon-success-hover: var(--horizon-color-green-600);
+    --horizon-success-active: var(--horizon-color-green-700);
+    --horizon-success-strong: var(--horizon-color-green-600);
+
+    --horizon-warning: var(--horizon-color-yellow-400);
+    --horizon-warning-hover: var(--horizon-color-yellow-600);
+    --horizon-warning-active: var(--horizon-color-yellow-700);
+    --horizon-warning-strong: var(--horizon-color-yellow-600);
+
+    --horizon-error: var(--horizon-color-red-400);
+    --horizon-error-hover: var(--horizon-color-red-600);
+    --horizon-error-active: var(--horizon-color-red-700);
+    --horizon-error-strong: var(--horizon-color-red-600);
+
+    --horizon-info: var(--horizon-color-blue-400);
+    --horizon-info-hover: var(--horizon-color-blue-600);
+    --horizon-info-active: var(--horizon-color-blue-700);
+    --horizon-info-strong: var(--horizon-color-blue-600);
+}
