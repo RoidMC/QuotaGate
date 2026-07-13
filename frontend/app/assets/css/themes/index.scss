@@ -1,0 +1,20 @@
+/**
+ * Horizon Themes
+ *
+ * @author  RoidMC
+ * @link    https://wwww.roidmc.com/
+ * @since   1.0.0
+ *
+ * @version 1.0.0
+ */
+
+// Styles
+@use"./styles/main.scss" as HorizonStyle;
+// Fonts
+@use "./fonts/index.scss" as HorizonFonts;
+// Variables
+@use "./variables/index.scss" as HorizonVariables;
+// Mixins
+@use "./mixins/index.scss" as HorizonMixins;
+// Components
+@use "./components/index.scss" as HorizonComponents;

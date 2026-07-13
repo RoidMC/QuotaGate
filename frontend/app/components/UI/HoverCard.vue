@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 无样式 HoverCard 组件
- * 纯 hover 触发，不受点击影响
+ * 桌面端 hover 触发，移动端自动切换为点击切换
  * 使用 CSS transition 实现动画
  * trigger 使用 display: contents 不影响布局
  * 支持溢出检测：自动翻转 + 水平修正
@@ -18,6 +18,8 @@ interface Props {
   sideOffset?: number
   /** 对齐方式 */
   align?: 'start' | 'center' | 'end'
+  /** 触发方式：hover 仅桌面悬停、click 点击切换、auto 根据设备自动选择 */
+  trigger?: 'hover' | 'click' | 'auto'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -25,7 +27,8 @@ const props = withDefaults(defineProps<Props>(), {
   closeDelay: 50,
   side: 'top',
   sideOffset: 8,
-  align: 'center'
+  align: 'center',
+  trigger: 'auto'
 })
 
 const isOpen = ref(false)
@@ -34,9 +37,11 @@ const triggerRef = ref<HTMLElement | null>(null)
 const contentRef = ref<HTMLElement | null>(null)
 const contentStyle = ref<Record<string, string>>({})
 const resolvedSide = ref(props.side)
+const isHoverMode = ref(true)
 
 let openTimer: ReturnType<typeof setTimeout> | null = null
 let closeTimer: ReturnType<typeof setTimeout> | null = null
+let hoverModeMediaQuery: MediaQueryList | null = null
 
 const VIEWPORT_PADDING = 8
 
@@ -48,6 +53,17 @@ const clearTimers = () => {
   if (closeTimer) {
     clearTimeout(closeTimer)
     closeTimer = null
+  }
+}
+
+// 根据 props.trigger 和设备能力决定当前使用 hover 还是 click
+const updateTriggerMode = () => {
+  if (props.trigger === 'hover') {
+    isHoverMode.value = true
+  } else if (props.trigger === 'click') {
+    isHoverMode.value = false
+  } else if (typeof window !== 'undefined') {
+    isHoverMode.value = window.matchMedia('(hover: hover) and (pointer: fine)').matches
   }
 }
 
@@ -250,8 +266,57 @@ const handleContentMouseLeave = () => {
   }, props.closeDelay)
 }
 
+// 点击触发（仅 click 模式生效）
+const handleTriggerClick = () => {
+  if (isHoverMode.value) return
+  if (isOpen.value) {
+    hideContent()
+  } else {
+    showContent()
+  }
+}
+
+// 点击外部关闭（仅 click 模式生效）
+const handleDocumentClick = (e: MouseEvent) => {
+  if (!isOpen.value || isHoverMode.value) return
+  const target = e.target as Node
+  if (triggerRef.value?.contains(target) || contentRef.value?.contains(target)) return
+  hideContent()
+}
+
+// ESC 关闭
+const handleKeydown = (e: KeyboardEvent) => {
+  if (!isOpen.value) return
+  if (e.key === 'Escape') {
+    hideContent()
+  }
+}
+
+onMounted(() => {
+  updateTriggerMode()
+  if (props.trigger === 'auto' && typeof window !== 'undefined') {
+    hoverModeMediaQuery = window.matchMedia('(hover: hover) and (pointer: fine)')
+    if (hoverModeMediaQuery.addEventListener) {
+      hoverModeMediaQuery.addEventListener('change', updateTriggerMode)
+    } else {
+      hoverModeMediaQuery.addListener(updateTriggerMode)
+    }
+  }
+  document.addEventListener('click', handleDocumentClick, true)
+  document.addEventListener('keydown', handleKeydown)
+})
+
 onUnmounted(() => {
   clearTimers()
+  if (hoverModeMediaQuery) {
+    if (hoverModeMediaQuery.removeEventListener) {
+      hoverModeMediaQuery.removeEventListener('change', updateTriggerMode)
+    } else {
+      hoverModeMediaQuery.removeListener(updateTriggerMode)
+    }
+  }
+  document.removeEventListener('click', handleDocumentClick, true)
+  document.removeEventListener('keydown', handleKeydown)
 })
 </script>
 
@@ -261,6 +326,7 @@ onUnmounted(() => {
     class="hover-card-trigger"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @click="handleTriggerClick"
   >
     <slot />
   </div>

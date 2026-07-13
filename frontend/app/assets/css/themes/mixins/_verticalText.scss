@@ -1,0 +1,33 @@
+@mixin vertical-text($text-color: white, $bracket-color: var(--horizon-color-yellow-400)) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 1rem;
+    z-index: 0;
+    pointer-events: none;
+    user-select: none;
+
+    span {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        font-size: clamp(0.75rem, 2vw, 1rem);
+        font-weight: bold;
+        letter-spacing: 0.5em;
+
+        &.bracket {
+            color: $bracket-color;
+            padding-bottom: 0.5em;
+        }
+
+        &.text {
+            color: $text-color;
+            padding: 0.5em 0;
+        }
+    }
+}
