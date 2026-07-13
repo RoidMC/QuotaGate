@@ -137,9 +137,9 @@ watch(() => props.open, (val) => {
 
 <style lang="scss">
 .language-dialog-overlay {
-    background: var(--horizon-overlay);
-    backdrop-filter: blur(var(--horizon-common-blur-xs));
-    -webkit-backdrop-filter: blur(var(--horizon-common-blur-xs));
+    background: var(--h-overlay);
+    backdrop-filter: blur(var(--h-common-blur-xs));
+    -webkit-backdrop-filter: blur(var(--h-common-blur-xs));
     position: fixed;
     inset: 0;
     z-index: 99998;
@@ -147,10 +147,10 @@ watch(() => props.open, (val) => {
 }
 
 .language-dialog-content {
-    background: var(--horizon-surface-bg-80);
-    backdrop-filter: blur(var(--horizon-common-blur-base)) saturate(180%);
-    border: 1px solid var(--horizon-border);
-    border-radius: var(--horizon-border-radius-base);
+    background: var(--h-surface-bg-80);
+    backdrop-filter: blur(var(--h-common-blur-base)) saturate(180%);
+    border: 1px solid var(--h-border);
+    border-radius: var(--h-border-radius-base);
     padding: 1.5rem;
     transition: min-width 0.3s ease, max-width 0.3s ease;
     position: fixed;
@@ -158,7 +158,7 @@ watch(() => props.open, (val) => {
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 99999;
-    box-shadow: 0 1.25rem 3.75rem var(--horizon-shadow);
+    box-shadow: 0 1.25rem 3.75rem var(--h-shadow);
     animation: h-dialog-scale-in 0.2s ease-out;
     outline: none;
 
@@ -168,15 +168,15 @@ watch(() => props.open, (val) => {
 }
 
 .language-dialog-title {
-    font-size: var(--horizon-text-size-base);
-    color: var(--horizon-text);
+    font-size: var(--h-text-size-base);
+    color: var(--h-text);
     margin: 0 0 1rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 
     &-icon {
-        font-size: var(--horizon-icon-size-lg);
+        font-size: var(--h-icon-size-lg);
     }
 }
 
@@ -184,20 +184,20 @@ watch(() => props.open, (val) => {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: var(--horizon-interactive);
-    border: 1px solid var(--horizon-border);
+    background: var(--h-interactive);
+    border: 1px solid var(--h-border);
     border-radius: 0.5rem;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.75rem;
     transition: border-color 0.2s ease;
 
     &:focus-within {
-        border-color: var(--horizon-border-strong);
+        border-color: var(--h-border-strong);
     }
 
     &-icon {
-        font-size: var(--horizon-icon-size-base);
-        color: var(--horizon-text-secondary);
+        font-size: var(--h-icon-size-base);
+        color: var(--h-text-secondary);
         flex-shrink: 0;
     }
 
@@ -206,12 +206,12 @@ watch(() => props.open, (val) => {
         background: transparent;
         border: none;
         outline: none;
-        color: var(--horizon-text);
-        font-size: var(--horizon-text-size-sm);
+        color: var(--h-text);
+        font-size: var(--h-text-size-sm);
         min-width: 0;
 
         &::placeholder {
-            color: var(--horizon-text-secondary);
+            color: var(--h-text-secondary);
         }
     }
 }
@@ -224,7 +224,7 @@ watch(() => props.open, (val) => {
     gap: 0.375rem;
     margin-top: 0.75rem;
     padding-top: 0.75rem;
-    border-top: 1px solid var(--horizon-border);
+    border-top: 1px solid var(--h-border);
 
     &-left {
         display: flex;
@@ -235,8 +235,8 @@ watch(() => props.open, (val) => {
     }
 
     &-icon {
-        font-size: var(--horizon-icon-size-base);
-        color: var(--horizon-text-secondary);
+        font-size: var(--h-icon-size-base);
+        color: var(--h-text-secondary);
         flex-shrink: 0;
         line-height: 1;
     }
@@ -248,8 +248,8 @@ watch(() => props.open, (val) => {
         align-items: center;
 
         span {
-            font-size: var(--horizon-text-size-xs);
-            color: var(--horizon-text-secondary);
+            font-size: var(--h-text-size-xs);
+            color: var(--h-text-secondary);
             word-break: break-word;
         }
     }
@@ -260,38 +260,38 @@ watch(() => props.open, (val) => {
         justify-content: center;
         width: 1.5rem;
         height: 1.5rem;
-        background: var(--horizon-interactive);
+        background: var(--h-interactive);
         border: none;
-        border-radius: var(--horizon-border-radius-xs);
-        color: var(--horizon-text-secondary);
+        border-radius: var(--h-border-radius-xs);
+        color: var(--h-text-secondary);
         text-decoration: none;
         cursor: pointer;
         transition: all 0.2s ease;
         flex-shrink: 0;
 
         &:hover {
-            background: var(--horizon-interactive-active);
-            color: var(--horizon-text);
+            background: var(--h-interactive-active);
+            color: var(--h-text);
         }
 
         .iconify {
-            font-size: var(--horizon-icon-size-base);
+            font-size: var(--h-icon-size-base);
         }
     }
 
     &-popup {
-        background: var(--horizon-surface-bg);
-        backdrop-filter: blur(var(--horizon-common-blur-base));
-        -webkit-backdrop-filter: blur(var(--horizon-common-blur-base));
-        border: 1px solid var(--horizon-border);
-        border-radius: var(--horizon-border-radius-sm);
+        background: var(--h-surface-bg);
+        backdrop-filter: blur(var(--h-common-blur-base));
+        -webkit-backdrop-filter: blur(var(--h-common-blur-base));
+        border: 1px solid var(--h-border);
+        border-radius: var(--h-border-radius-sm);
         padding: 0.375rem 0.625rem;
-        box-shadow: 0 0.5rem 1.5rem var(--horizon-shadow);
+        box-shadow: 0 0.5rem 1.5rem var(--h-shadow);
         z-index: 999999;
 
         span {
-            font-size: var(--horizon-text-size-xs);
-            color: var(--horizon-text);
+            font-size: var(--h-text-size-xs);
+            color: var(--h-text);
             white-space: nowrap;
         }
     }
@@ -299,7 +299,7 @@ watch(() => props.open, (val) => {
 
 .language-dialog-list-wrapper {
     position: relative;
-    border-radius: var(--horizon-border-radius-base);
+    border-radius: var(--h-border-radius-base);
 }
 
 .language-dialog-list {
@@ -315,17 +315,17 @@ watch(() => props.open, (val) => {
     }
 
     &::-webkit-scrollbar-track {
-        background: var(--horizon-interactive-active);
-        border-radius: var(--horizon-border-radius-base);
+        background: var(--h-interactive-active);
+        border-radius: var(--h-border-radius-base);
 
     }
 
     &::-webkit-scrollbar-thumb {
-        background: var(--horizon-interactive);
-        border-radius: var(--horizon-border-radius-base);
+        background: var(--h-interactive);
+        border-radius: var(--h-border-radius-base);
 
         &:hover {
-            background: var(--horizon-interactive-active);
+            background: var(--h-interactive-active);
         }
     }
 }
@@ -341,34 +341,34 @@ watch(() => props.open, (val) => {
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: left;
-    color: var(--horizon-text);
+    color: var(--h-text);
     width: 100%;
 
     &:hover {
-        background: var(--horizon-interactive);
+        background: var(--h-interactive);
     }
 
     &--active {
-        background: var(--horizon-interactive-active);
-        border-color: var(--horizon-border);
+        background: var(--h-interactive-active);
+        border-color: var(--h-border);
     }
 
     &-flag {
-        font-size: var(--horizon-icon-size-base);
+        font-size: var(--h-icon-size-base);
         width: 1.5rem;
         height: 1.5rem;
         flex-shrink: 0;
     }
 
     &-name {
-        font-size: var(--horizon-text-size-sm);
+        font-size: var(--h-text-size-sm);
         font-weight: 500;
         flex: 1;
     }
 
     &-check {
-        font-size: var(--horizon-icon-size-lg);
-        color: var(--horizon-success);
+        font-size: var(--h-icon-size-lg);
+        color: var(--h-success);
     }
 }
 
@@ -379,10 +379,10 @@ watch(() => props.open, (val) => {
     justify-content: center;
     gap: 0.5rem;
     padding: 1.5rem 0;
-    color: var(--horizon-text-secondary);
+    color: var(--h-text-secondary);
 
     &-icon {
-        font-size: var(--horizon-icon-size-lg);
+        font-size: var(--h-icon-size-lg);
     }
 }
 
@@ -398,17 +398,17 @@ watch(() => props.open, (val) => {
     background: transparent;
     border: none;
     border-radius: 0.5rem;
-    color: var(--horizon-text-secondary);
+    color: var(--h-text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:hover {
-        background: var(--horizon-interactive);
-        color: var(--horizon-text);
+        background: var(--h-interactive);
+        color: var(--h-text);
     }
 
     .iconify {
-        font-size: var(--horizon-icon-size-lg);
+        font-size: var(--h-icon-size-lg);
     }
 }
 

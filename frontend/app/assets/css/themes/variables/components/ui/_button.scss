@@ -2,17 +2,17 @@
     --h-button-width: auto;
     --h-button-height: 2rem;
     --h-button-padding: 0 1rem;
-    --h-button-font-size: var(--horizon-text-size-sm);
-    --h-button-border-radius: var(--horizon-border-radius-none);
-    --h-button-bg: var(--horizon-surface-elevated);
-    --h-button-text: var(--horizon-text);
+    --h-button-font-size: var(--h-text-size-sm);
+    --h-button-border-radius: var(--h-border-radius-none);
+    --h-button-bg: var(--h-surface-elevated);
+    --h-button-text: var(--h-text);
     --h-button-border: transparent;
     --h-button-icon-gap: 0.3rem;
-    --h-button-icon-size: var(--horizon-icon-size-base);
+    --h-button-icon-size: var(--h-icon-size-base);
     --h-button-icon-color: currentColor;
 
-    --h-button-hover-bg: var(--horizon-surface-sunken);
-    --h-button-hover-text: var(--horizon-text);
+    --h-button-hover-bg: var(--h-surface-sunken);
+    --h-button-hover-text: var(--h-text);
 
     --h-button-disabled-opacity: 0.5;
     --h-button-active-opacity: 0.8;
