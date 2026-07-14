@@ -42,11 +42,11 @@
     --h-primary-900: var(--h-color-yellow-900);
     --h-primary-950: var(--h-color-yellow-950);
 
-    /* Primary 变体 */
-    --h-primary-soft: color-mix(in srgb, var(--h-primary) 15%, transparent);
-    --h-primary-hover: var(--h-color-yellow-600);
-    --h-primary-active: var(--h-color-yellow-700);
-    --h-primary-strong: var(--h-color-yellow-700);
+    /* Primary 变体 - 基于 oklch + color-mix 推导 */
+    --h-primary-soft: color-mix(in oklch, var(--h-primary) 15%, transparent);
+    --h-primary-hover: color-mix(in oklch, var(--h-primary) 80%, black);
+    --h-primary-active: color-mix(in oklch, var(--h-primary) 65%, black);
+    --h-primary-strong: color-mix(in oklch, var(--h-primary) 65%, black);
 
     /* 调色盘 - 界面基础色 */
     --h-surface: var(--h-color-stone-50);
@@ -59,30 +59,30 @@
     --h-text-secondary: var(--h-color-stone-600);
     --h-text-inverse: var(--h-color-stone-50);
 
-    /* 语义色 */
+    /* 语义色 - 基础色来自 oklch 色阶，变体用 color-mix 推导 */
     --h-success: var(--h-color-green-500);
-    --h-success-soft: color-mix(in srgb, var(--h-success) 15%, transparent);
-    --h-success-hover: var(--h-color-green-700);
-    --h-success-active: var(--h-color-green-800);
-    --h-success-strong: var(--h-color-green-700);
+    --h-success-soft: color-mix(in oklch, var(--h-success) 15%, transparent);
+    --h-success-hover: color-mix(in oklch, var(--h-success) 75%, black);
+    --h-success-active: color-mix(in oklch, var(--h-success) 60%, black);
+    --h-success-strong: color-mix(in oklch, var(--h-success) 75%, black);
 
     --h-warning: var(--h-color-yellow-500);
-    --h-warning-soft: color-mix(in srgb, var(--h-warning) 15%, transparent);
-    --h-warning-hover: var(--h-color-yellow-700);
-    --h-warning-active: var(--h-color-yellow-800);
-    --h-warning-strong: var(--h-color-yellow-700);
+    --h-warning-soft: color-mix(in oklch, var(--h-warning) 15%, transparent);
+    --h-warning-hover: color-mix(in oklch, var(--h-warning) 75%, black);
+    --h-warning-active: color-mix(in oklch, var(--h-warning) 60%, black);
+    --h-warning-strong: color-mix(in oklch, var(--h-warning) 75%, black);
 
     --h-error: var(--h-color-red-500);
-    --h-error-soft: color-mix(in srgb, var(--h-error) 15%, transparent);
-    --h-error-hover: var(--h-color-red-700);
-    --h-error-active: var(--h-color-red-800);
-    --h-error-strong: var(--h-color-red-700);
+    --h-error-soft: color-mix(in oklch, var(--h-error) 15%, transparent);
+    --h-error-hover: color-mix(in oklch, var(--h-error) 75%, black);
+    --h-error-active: color-mix(in oklch, var(--h-error) 60%, black);
+    --h-error-strong: color-mix(in oklch, var(--h-error) 75%, black);
 
     --h-info: var(--h-color-blue-500);
-    --h-info-soft: color-mix(in srgb, var(--h-info) 15%, transparent);
-    --h-info-hover: var(--h-color-blue-700);
-    --h-info-active: var(--h-color-blue-800);
-    --h-info-strong: var(--h-color-blue-700);
+    --h-info-soft: color-mix(in oklch, var(--h-info) 15%, transparent);
+    --h-info-hover: color-mix(in oklch, var(--h-info) 75%, black);
+    --h-info-active: color-mix(in oklch, var(--h-info) 60%, black);
+    --h-info-strong: color-mix(in oklch, var(--h-info) 75%, black);
 
     /* 衍生色 - 使用 color-mix 自动生成 */
     --h-surface-bg-95: color-mix(in srgb, var(--h-surface) 95%, transparent);
@@ -96,6 +96,22 @@
     --h-surface-bg-30: color-mix(in srgb, var(--h-surface) 30%, transparent);
     --h-surface-bg-20: color-mix(in srgb, var(--h-surface) 20%, transparent);
     --h-surface-bg-10: color-mix(in srgb, var(--h-surface) 10%, transparent);
+
+    /* 反色衍生色 - 用于 inverse 背景上的半透明填充和边框 */
+    --h-surface-inverse-bg-95: color-mix(in srgb, var(--h-surface-inverse) 95%, transparent);
+    --h-surface-inverse-bg-90: color-mix(in srgb, var(--h-surface-inverse) 90%, transparent);
+    --h-surface-inverse-bg-85: color-mix(in srgb, var(--h-surface-inverse) 85%, transparent);
+    --h-surface-inverse-bg-80: color-mix(in srgb, var(--h-surface-inverse) 80%, transparent);
+    --h-surface-inverse-bg-70: color-mix(in srgb, var(--h-surface-inverse) 70%, transparent);
+    --h-surface-inverse-bg-60: color-mix(in srgb, var(--h-surface-inverse) 60%, transparent);
+    --h-surface-inverse-bg-50: color-mix(in srgb, var(--h-surface-inverse) 50%, transparent);
+    --h-surface-inverse-bg-40: color-mix(in srgb, var(--h-surface-inverse) 40%, transparent);
+    --h-surface-inverse-bg-30: color-mix(in srgb, var(--h-surface-inverse) 30%, transparent);
+    --h-surface-inverse-bg-20: color-mix(in srgb, var(--h-surface-inverse) 20%, transparent);
+    --h-surface-inverse-bg-10: color-mix(in srgb, var(--h-surface-inverse) 10%, transparent);
+    --h-border-inverse: color-mix(in srgb, var(--h-text-inverse) 10%, transparent);
+    --h-border-inverse-strong: color-mix(in srgb, var(--h-text-inverse) 20%, transparent);
+
     --h-border: color-mix(in srgb, var(--h-text) 10%, transparent);
     --h-border-strong: color-mix(in srgb, var(--h-text) 20%, transparent);
     --h-shadow: color-mix(in srgb, var(--h-surface) 15%, transparent);
@@ -115,24 +131,24 @@
     --h-text-secondary: var(--h-color-stone-400);
     --h-text-inverse: var(--h-color-stone-950);
 
-    /* 深色模式下语义色使用更亮的色阶，保证对比度 */
+    /* 深色模式下语义色使用更亮的色阶，保证对比度；变体仍用 color-mix 推导 */
     --h-success: var(--h-color-green-400);
-    --h-success-hover: var(--h-color-green-600);
-    --h-success-active: var(--h-color-green-700);
-    --h-success-strong: var(--h-color-green-600);
+    --h-success-hover: color-mix(in oklch, var(--h-success) 70%, black);
+    --h-success-active: color-mix(in oklch, var(--h-success) 55%, black);
+    --h-success-strong: color-mix(in oklch, var(--h-success) 70%, black);
 
     --h-warning: var(--h-color-yellow-400);
-    --h-warning-hover: var(--h-color-yellow-600);
-    --h-warning-active: var(--h-color-yellow-700);
-    --h-warning-strong: var(--h-color-yellow-600);
+    --h-warning-hover: color-mix(in oklch, var(--h-warning) 70%, black);
+    --h-warning-active: color-mix(in oklch, var(--h-warning) 55%, black);
+    --h-warning-strong: color-mix(in oklch, var(--h-warning) 70%, black);
 
     --h-error: var(--h-color-red-400);
-    --h-error-hover: var(--h-color-red-600);
-    --h-error-active: var(--h-color-red-700);
-    --h-error-strong: var(--h-color-red-600);
+    --h-error-hover: color-mix(in oklch, var(--h-error) 70%, black);
+    --h-error-active: color-mix(in oklch, var(--h-error) 55%, black);
+    --h-error-strong: color-mix(in oklch, var(--h-error) 70%, black);
 
     --h-info: var(--h-color-blue-400);
-    --h-info-hover: var(--h-color-blue-600);
-    --h-info-active: var(--h-color-blue-700);
-    --h-info-strong: var(--h-color-blue-600);
+    --h-info-hover: color-mix(in oklch, var(--h-info) 70%, black);
+    --h-info-active: color-mix(in oklch, var(--h-info) 55%, black);
+    --h-info-strong: color-mix(in oklch, var(--h-info) 70%, black);
 }
