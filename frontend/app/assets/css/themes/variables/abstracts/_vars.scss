@@ -1,6 +1,48 @@
+/**
+ * Horizon UI 语义变量
+ * 所有语义色从调色盘种子（--h-palette-*）推导，修改种子即可切换整套主题。
+ */
+
+// 调色盘种子注册为 typed custom property，确保颜色切换时可以平滑过渡
+@property --h-palette-primary {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+}
+
+@property --h-palette-success {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+}
+
+@property --h-palette-warning {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+}
+
+@property --h-palette-error {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+}
+
+@property --h-palette-info {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+}
+
+@property --h-palette-neutral {
+    syntax: "<color>";
+    inherits: true;
+    initial-value: transparent;
+}
+
 :root {
-    --h-font-family: "DingTalk JinBuTi", "HarmonyOS_Regular";
-    --h-font-harmony: "HarmonyOS_Regular";
+    --h-font-family: "HarmonyOS Sans SC", "HarmonyOS Sans", "HarmonyOS Sans TC", "DingTalk JinBuTi", system-ui, sans-serif;
+    --h-font-harmony: "HarmonyOS Sans SC", "HarmonyOS Sans", "HarmonyOS Sans TC";
     --h-font-dingtalk: "DingTalk JinBuTi";
 
     /* Common - 公共变量 */
@@ -12,11 +54,13 @@
     --h-text-size-xs: 0.75rem;
     --h-text-size-sm: 0.875rem;
     --h-text-size-base: 1rem;
+    --h-text-size-md: 1.125rem;
     --h-text-size-lg: 1.25rem;
     --h-text-size-xl: 1.5rem;
     --h-icon-size-xs: var(--h-text-size-xs);
     --h-icon-size-sm: var(--h-text-size-sm);
     --h-icon-size-base: var(--h-text-size-base);
+    --h-icon-size-md: var(--h-text-size-md);
     --h-icon-size-lg: var(--h-text-size-lg);
     --h-icon-size-xl: var(--h-text-size-xl);
 
@@ -28,25 +72,19 @@
     --h-border-radius-lg: 1.25rem;
     --h-border-radius-xl: 1.5rem;
 
-    /* Primary - 主操作色（黄色） */
-    --h-primary: var(--h-color-yellow-300);
-    --h-primary-50: var(--h-color-yellow-50);
-    --h-primary-100: var(--h-color-yellow-100);
-    --h-primary-200: var(--h-color-yellow-200);
-    --h-primary-300: var(--h-color-yellow-300);
-    --h-primary-400: var(--h-color-yellow-400);
-    --h-primary-500: var(--h-color-yellow-500);
-    --h-primary-600: var(--h-color-yellow-600);
-    --h-primary-700: var(--h-color-yellow-700);
-    --h-primary-800: var(--h-color-yellow-800);
-    --h-primary-900: var(--h-color-yellow-900);
-    --h-primary-950: var(--h-color-yellow-950);
-
-    /* Primary 变体 - 基于 oklch + color-mix 推导 */
-    --h-primary-soft: color-mix(in oklch, var(--h-primary) 15%, transparent);
-    --h-primary-hover: color-mix(in oklch, var(--h-primary) 80%, black);
-    --h-primary-active: color-mix(in oklch, var(--h-primary) 65%, black);
-    --h-primary-strong: color-mix(in oklch, var(--h-primary) 65%, black);
+    /* Z-Index - 层级 */
+    --h-z-base: 0;
+    --h-z-dropdown: 100;
+    --h-z-sticky: 200;
+    --h-z-fixed: 300;
+    --h-z-nav: 400;
+    --h-z-drawer: 500;
+    --h-z-modal-backdrop: 600;
+    --h-z-modal: 700;
+    --h-z-popover: 800;
+    --h-z-toast: 900;
+    --h-z-loading: 1000;
+    --h-z-debug: 9999;
 
     /* 调色盘 - 界面基础色 */
     --h-surface: var(--h-color-stone-50);
@@ -59,26 +97,41 @@
     --h-text-secondary: var(--h-color-stone-600);
     --h-text-inverse: var(--h-color-stone-50);
 
-    /* 语义色 - 基础色来自 oklch 色阶，变体用 color-mix 推导 */
-    --h-success: var(--h-color-green-500);
+    /* 调色盘种子 - 修改这些变量可切换整套主题色 */
+    --h-palette-primary: var(--h-color-yellow-300);
+    --h-palette-success: var(--h-color-green-500);
+    --h-palette-warning: var(--h-color-yellow-500);
+    --h-palette-error: var(--h-color-red-500);
+    --h-palette-info: var(--h-color-blue-500);
+    --h-palette-neutral: var(--h-color-stone-500);
+
+    /* 语义色 - 从调色盘种子引用，变体用 color-mix 推导 */
+    --h-primary: var(--h-palette-primary);
+    --h-success: var(--h-palette-success);
+    --h-warning: var(--h-palette-warning);
+    --h-error: var(--h-palette-error);
+    --h-info: var(--h-palette-info);
+
+    --h-primary-soft: color-mix(in oklch, var(--h-primary) 15%, transparent);
+    --h-primary-hover: color-mix(in oklch, var(--h-primary) 80%, black);
+    --h-primary-active: color-mix(in oklch, var(--h-primary) 65%, black);
+    --h-primary-strong: color-mix(in oklch, var(--h-primary) 65%, black);
+
     --h-success-soft: color-mix(in oklch, var(--h-success) 15%, transparent);
     --h-success-hover: color-mix(in oklch, var(--h-success) 75%, black);
     --h-success-active: color-mix(in oklch, var(--h-success) 60%, black);
     --h-success-strong: color-mix(in oklch, var(--h-success) 75%, black);
 
-    --h-warning: var(--h-color-yellow-500);
     --h-warning-soft: color-mix(in oklch, var(--h-warning) 15%, transparent);
     --h-warning-hover: color-mix(in oklch, var(--h-warning) 75%, black);
     --h-warning-active: color-mix(in oklch, var(--h-warning) 60%, black);
     --h-warning-strong: color-mix(in oklch, var(--h-warning) 75%, black);
 
-    --h-error: var(--h-color-red-500);
     --h-error-soft: color-mix(in oklch, var(--h-error) 15%, transparent);
     --h-error-hover: color-mix(in oklch, var(--h-error) 75%, black);
     --h-error-active: color-mix(in oklch, var(--h-error) 60%, black);
     --h-error-strong: color-mix(in oklch, var(--h-error) 75%, black);
 
-    --h-info: var(--h-color-blue-500);
     --h-info-soft: color-mix(in oklch, var(--h-info) 15%, transparent);
     --h-info-hover: color-mix(in oklch, var(--h-info) 75%, black);
     --h-info-active: color-mix(in oklch, var(--h-info) 60%, black);
@@ -131,24 +184,10 @@
     --h-text-secondary: var(--h-color-stone-400);
     --h-text-inverse: var(--h-color-stone-950);
 
-    /* 深色模式下语义色使用更亮的色阶，保证对比度；变体仍用 color-mix 推导 */
-    --h-success: var(--h-color-green-400);
-    --h-success-hover: color-mix(in oklch, var(--h-success) 70%, black);
-    --h-success-active: color-mix(in oklch, var(--h-success) 55%, black);
-    --h-success-strong: color-mix(in oklch, var(--h-success) 70%, black);
-
-    --h-warning: var(--h-color-yellow-400);
-    --h-warning-hover: color-mix(in oklch, var(--h-warning) 70%, black);
-    --h-warning-active: color-mix(in oklch, var(--h-warning) 55%, black);
-    --h-warning-strong: color-mix(in oklch, var(--h-warning) 70%, black);
-
-    --h-error: var(--h-color-red-400);
-    --h-error-hover: color-mix(in oklch, var(--h-error) 70%, black);
-    --h-error-active: color-mix(in oklch, var(--h-error) 55%, black);
-    --h-error-strong: color-mix(in oklch, var(--h-error) 70%, black);
-
-    --h-info: var(--h-color-blue-400);
-    --h-info-hover: color-mix(in oklch, var(--h-info) 70%, black);
-    --h-info-active: color-mix(in oklch, var(--h-info) 55%, black);
-    --h-info-strong: color-mix(in oklch, var(--h-info) 70%, black);
+    /* 深色模式下语义色基于调色盘种子提亮，保证对比度；变体仍用 color-mix 推导 */
+    --h-primary: color-mix(in oklch, var(--h-palette-primary) 92%, white);
+    --h-success: color-mix(in oklch, var(--h-palette-success) 85%, white);
+    --h-warning: color-mix(in oklch, var(--h-palette-warning) 85%, white);
+    --h-error: color-mix(in oklch, var(--h-palette-error) 85%, white);
+    --h-info: color-mix(in oklch, var(--h-palette-info) 85%, white);
 }
