@@ -28,6 +28,7 @@ func (WebhookConfig) TenantAware() bool { return true }
 
 type WebhookDeliveryLog struct {
 	ID              string          `gorm:"primaryKey;size:36" json:"id"`
+	TenantID        string          `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
 	WebhookConfigID string          `gorm:"column:webhook_config_id;size:36;index;not null" json:"webhook_config_id"`
 	EventID         string          `gorm:"column:event_id;size:36;index;not null" json:"event_id"`
 	EventType       types.EventType `gorm:"column:event_type;size:64;not null;index" json:"event_type"`
@@ -73,6 +74,7 @@ type WebhookOutbox struct {
 	TimeoutSeconds int             `gorm:"column:timeout_seconds;default:10;not null" json:"timeout_seconds"`
 	NextAttemptAt  time.Time       `gorm:"column:next_attempt_at;index;not null" json:"next_attempt_at"`
 	LastError      string          `gorm:"column:last_error;type:text" json:"last_error"`
+	ClaimedAt      *time.Time      `gorm:"column:claimed_at" json:"-"`
 	CreatedAt      time.Time       `gorm:"autoCreateTime;index" json:"created_at"`
 	UpdatedAt      time.Time       `gorm:"autoUpdateTime" json:"updated_at"`
 }
