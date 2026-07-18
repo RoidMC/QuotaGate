@@ -57,8 +57,8 @@ func TestGenerateSelfSignedCert(t *testing.T) {
 	}
 
 	// Verify certificate fields
-	if len(parsedCert.Subject.Organization) == 0 || parsedCert.Subject.Organization[0] != "quotagate" {
-		t.Errorf("organization = %v, want quotagate", parsedCert.Subject.Organization)
+	if len(parsedCert.Subject.Organization) == 0 || parsedCert.Subject.Organization[0] != "RoidMC Studios" {
+		t.Errorf("organization = %v, want RoidMC Studios", parsedCert.Subject.Organization)
 	}
 
 	if !strings.Contains(parsedCert.Subject.CommonName, "Development Only") {

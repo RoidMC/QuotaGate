@@ -9,6 +9,7 @@ import (
 	"github.com/roidmc/quotagate/internal/event"
 	"github.com/roidmc/quotagate/internal/model"
 	"github.com/roidmc/quotagate/internal/repository"
+	"github.com/roidmc/quotagate/internal/util/tx"
 	"gorm.io/gorm"
 )
 
@@ -54,8 +55,8 @@ func TestTransactionalBus_WritesOutboxInsideTransaction(t *testing.T) {
 	evt := event.Event{ID: "evt-1", Type: "user.register", Subject: "tenant-1", Data: map[string]string{"x": "y"}}
 
 	// Simulate a business transaction that publishes an event.
-	err := db.Transaction(func(tx *gorm.DB) error {
-		return bus.PublishEvent(event.WithTx(context.Background(), tx), evt)
+	err := db.Transaction(func(txn *gorm.DB) error {
+		return bus.PublishEvent(tx.WithTx(context.Background(), txn), evt)
 	})
 	if err != nil {
 		t.Fatalf("transaction failed: %v", err)
@@ -92,8 +93,8 @@ func TestTransactionalBus_RollsBackOutboxWhenTransactionRollsBack(t *testing.T) 
 
 	evt := event.Event{ID: "evt-rollback", Type: "user.register", Subject: "tenant-1"}
 
-	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := bus.PublishEvent(event.WithTx(context.Background(), tx), evt); err != nil {
+	err := db.Transaction(func(txn *gorm.DB) error {
+		if err := bus.PublishEvent(tx.WithTx(context.Background(), txn), evt); err != nil {
 			return err
 		}
 		return context.Canceled // force rollback

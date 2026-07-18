@@ -32,7 +32,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                         业务 Service                             │
 │  db.Transaction(func(tx *gorm.DB) error {                       │
-│      ctx = event.WithTx(ctx, tx)                                │
+│      ctx = tx.WithTx(ctx, tx)                                │
 │      return bus.PublishEvent(ctx, evt)                          │
 │  })                                                             │
 └───────────────────────────┬─────────────────────────────────────┘
@@ -107,7 +107,7 @@ bus := event.NewTransactionalBus(eventBus, webhookRepo)
 
 // 事务内发布：写 outbox
 err := db.Transaction(func(tx *gorm.DB) error {
-    ctx = event.WithTx(ctx, tx)
+    ctx = tx.WithTx(ctx, tx)
     return bus.PublishEvent(ctx, evt)
 })
 
@@ -175,6 +175,7 @@ import (
 
     "github.com/roidmc/quotagate/internal/event"
     "github.com/roidmc/quotagate/internal/repository"
+    "github.com/roidmc/quotagate/internal/util/tx"
     "gorm.io/gorm"
 )
 
@@ -191,7 +192,7 @@ func handleRegister(
         }
 
         // 2. 在同一事务内发布事件 → 写入 webhook_outbox
-        ctx = event.WithTx(ctx, tx)
+        ctx = tx.WithTx(ctx, tx)
         evt := event.Event{
             ID:      "evt-xxx",
             Type:    "user.register",
@@ -227,7 +228,7 @@ txBus := event.NewTransactionalBus(eventBus, webhookRepo)
 
 ## 注意事项
 
-- `event.WithTx(ctx, tx)` 中的 `tx` 必须是 GORM 事务对象（`db.Begin()` 或 `db.Transaction` 回调中的 `*gorm.DB`）。传普通 `*gorm.DB` 也可以工作，但不会随外部事务回滚。
+- `tx.WithTx(ctx, tx)`（`github.com/roidmc/quotagate/internal/util/tx`）中的 `tx` 必须是 GORM 事务对象（`db.Begin()` 或 `db.Transaction` 回调中的 `*gorm.DB`）。传普通 `*gorm.DB` 也可以工作，但不会随外部事务回滚。
 - `TransactionalBus.PublishEvent` 在 ctx 含事务时**不会**走 `EventBus`，因此 Redis/内存订阅者不会立刻收到该事件。Webhook 消费由 `WebhookWorker` 异步完成。
 - 事务外调用 `TransactionalBus.PublishEvent` 等价于直接调用底层 `EventBus.PublishEvent`。
 - `CreateOutboxEntries` 要求所有读写在同一 `*gorm.DB` 上，以避免 SQLite 等单连接场景下的死锁。`TransactionalBus` 已保证这一点。

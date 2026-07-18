@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/roidmc/quotagate/internal/util/tx"
 	"github.com/roidmc/quotagate/pkg/kexswiftbus"
 	"gorm.io/gorm"
 )
@@ -47,12 +48,12 @@ func NewTransactionalBus(bus *EventBus, outboxWriter OutboxWriter) *Transactiona
 // transaction. Otherwise it is forwarded to the underlying EventBus for
 // immediate delivery to subscribers.
 func (b *TransactionalBus) PublishEvent(ctx context.Context, evt Event) error {
-	if tx, ok := TxFromContext(ctx); ok {
+	if txn, ok := tx.TxFromContext(ctx); ok {
 		payload, err := json.Marshal(evt)
 		if err != nil {
 			return fmt.Errorf("event: failed to marshal event for outbox: %w", err)
 		}
-		return b.outboxWriter.CreateOutboxEntries(tx, evt.Type, evt.ID, evt.Subject, string(payload))
+		return b.outboxWriter.CreateOutboxEntries(txn, evt.Type, evt.ID, evt.Subject, string(payload))
 	}
 
 	b.bus.PublishEvent(evt)
@@ -63,12 +64,12 @@ func (b *TransactionalBus) PublishEvent(ctx context.Context, evt Event) error {
 // the outbox when a transaction is present; otherwise it forwards to the
 // underlying EventBus.PublishEventSync.
 func (b *TransactionalBus) PublishEventSync(ctx context.Context, evt Event) error {
-	if tx, ok := TxFromContext(ctx); ok {
+	if txn, ok := tx.TxFromContext(ctx); ok {
 		payload, err := json.Marshal(evt)
 		if err != nil {
 			return fmt.Errorf("event: failed to marshal event for outbox: %w", err)
 		}
-		return b.outboxWriter.CreateOutboxEntries(tx, evt.Type, evt.ID, evt.Subject, string(payload))
+		return b.outboxWriter.CreateOutboxEntries(txn, evt.Type, evt.ID, evt.Subject, string(payload))
 	}
 
 	return b.bus.PublishEventSync(evt)

@@ -81,7 +81,9 @@ func SanitizeAuditLog(in AuditLogInput) SanitizeResult {
 func ComputeSignature(entry AuditLogInput, secret string) string {
 	timestampStr := entry.Timestamp.Format(time.RFC3339)
 	if timestampStr == "0001-01-01T00:00:00Z" {
-		timestampStr = time.Now().Format(time.RFC3339)
+		// Callers must provide an explicit timestamp; do not generate one here
+		// because signature verification requires the same canonical input.
+		timestampStr = "0001-01-01T00:00:00Z"
 	}
 
 	canonical := strings.Join([]string{
