@@ -49,8 +49,8 @@
 // @param $position 位置，默认right
 // @param $width 宽度，默认3%
 // @param $height 高度，默认80%
-// @param $color 颜色，默认#ffdb67
-@mixin decorative-bar($position: right, $width: 3%, $height: 80%, $color: #ffdb67) {
+// @param $color 颜色，默认使用主题主色
+@mixin decorative-bar($position: right, $width: 3%, $height: 80%, $color: var(--h-primary)) {
     &::after {
         content: "";
         position: absolute;
@@ -73,7 +73,7 @@
 // @param $width 宽度，默认0.2rem
 // @param $height 高度，默认60%
 // @param $border-radius 圆角，默认0.2rem
-// @param $colors 渐变颜色列表，默认(#4FC3F7, #FF9800, #00ffdd)
+// @param $colors 渐变颜色列表，默认使用主题 info / warning / primary 颜色
 // @param $gradient-direction 渐变方向，默认 to-bottom
 // @param $transition-duration 过渡时间，默认0.3s
 // @param $transition-easing 过渡缓动函数，默认ease
@@ -82,8 +82,8 @@
     $transform: translateY(-50%),
     $width: 0.2rem,
     $height: 65%,
-    $border-radius: 0.2rem,
-    $colors: (#4FC3F7, #FF9800, #FFDB67),
+    $border-radius: 0.1rem,
+    $colors: (var(--h-info), var(--h-warning), var(--h-primary)),
     $gradient-direction: to-bottom,
     $transition-duration: 0.3s,
     $transition-easing: ease
@@ -128,9 +128,9 @@
 
 // 警戒线纹理混合宏（基于用户偏好的高密度效果）
 // @param $size 纹理大小，默认2px（小像素值提升密度）
-// @param $color1 第一种颜色，默认#333
-// @param $color2 第二种颜色，默认#000
-@mixin warning-stripe-pattern($size: 2px, $color1: #333, $color2: #000) {
+// @param $color1 第一种颜色，默认使用主题 warning
+// @param $color2 第二种颜色，默认使用主题 warning-strong
+@mixin warning-stripe-pattern($size: 2px, $color1: var(--h-warning), $color2: var(--h-warning-strong)) {
     background: repeating-linear-gradient(45deg,
             $color1,
             $color1 $size,

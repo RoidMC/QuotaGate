@@ -79,7 +79,7 @@ func generateECDSAKeyBase64(t *testing.T, curve elliptic.Curve) string {
 func TestJWSGenerateAndParseAccessToken(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWS, testSignKey, "", 15*time.Minute, 7*24*time.Hour)
 
-	token, err := m.GenerateAccessToken("user-123", "admin")
+	token, err := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken failed: %v", err)
 	}
@@ -103,7 +103,7 @@ func TestJWSGenerateAndParseAccessToken(t *testing.T) {
 func TestJWEGenerateAndParseAccessToken(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWE, testSignKey, testEncKey, 15*time.Minute, 7*24*time.Hour)
 
-	token, err := m.GenerateAccessToken("user-123", "admin")
+	token, err := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken failed: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestJWEGenerateAndParseAccessToken(t *testing.T) {
 func TestJWSRefreshToken(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWS, testSignKey, "", 15*time.Minute, 7*24*time.Hour)
 
-	token, err := m.GenerateRefreshToken("user-456", "user")
+	token, err := m.GenerateRefreshToken("user-456", "user", "", []string{"user"})
 	if err != nil {
 		t.Fatalf("GenerateRefreshToken failed: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestJWSRefreshToken(t *testing.T) {
 func TestJWERefreshToken(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWE, testSignKey, testEncKey, 15*time.Minute, 7*24*time.Hour)
 
-	token, err := m.GenerateRefreshToken("user-456", "user")
+	token, err := m.GenerateRefreshToken("user-456", "user", "", []string{"user"})
 	if err != nil {
 		t.Fatalf("GenerateRefreshToken failed: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestJWERefreshToken(t *testing.T) {
 func TestJWSExpiredToken(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWS, testSignKey, "", -1*time.Second, 7*24*time.Hour)
 
-	token, _ := m.GenerateAccessToken("user-789", "user")
+	token, _ := m.GenerateAccessToken("user-789", "user", "", []string{"user"})
 	_, err := m.ParseToken(token)
 	if err != kexjwt.ErrExpiredToken {
 		t.Errorf("expected ErrExpiredToken, got %v", err)
@@ -173,7 +173,7 @@ func TestJWSExpiredToken(t *testing.T) {
 func TestJWEExpiredToken(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWE, testSignKey, testEncKey, -1*time.Second, 7*24*time.Hour)
 
-	token, _ := m.GenerateAccessToken("user-789", "user")
+	token, _ := m.GenerateAccessToken("user-789", "user", "", []string{"user"})
 	_, err := m.ParseToken(token)
 	if err != kexjwt.ErrExpiredToken {
 		t.Errorf("expected ErrExpiredToken, got %v", err)
@@ -202,7 +202,7 @@ func TestJWSWrongSignKey(t *testing.T) {
 	m1 := mustNewManager(t, kexjwt.ModeJWS, "correct-key", "", 15*time.Minute, 7*24*time.Hour)
 	m2 := mustNewManager(t, kexjwt.ModeJWS, "wrong-key", "", 15*time.Minute, 7*24*time.Hour)
 
-	token, _ := m1.GenerateAccessToken("user-123", "admin")
+	token, _ := m1.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := m2.ParseToken(token)
 	if err != kexjwt.ErrInvalidToken {
 		t.Errorf("expected ErrInvalidToken, got %v", err)
@@ -213,7 +213,7 @@ func TestJWEWrongEncKey(t *testing.T) {
 	m1 := mustNewManager(t, kexjwt.ModeJWE, testSignKey, testEncKey, 15*time.Minute, 7*24*time.Hour)
 	m2 := mustNewManager(t, kexjwt.ModeJWE, testSignKey, "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB", 15*time.Minute, 7*24*time.Hour)
 
-	token, _ := m1.GenerateAccessToken("user-123", "admin")
+	token, _ := m1.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := m2.ParseToken(token)
 	if err == nil {
 		t.Error("expected error with wrong encryption key, got nil")
@@ -223,7 +223,7 @@ func TestJWEWrongEncKey(t *testing.T) {
 func TestJWSTokenFormat(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWS, testSignKey, "", 15*time.Minute, 7*24*time.Hour)
 
-	token, _ := m.GenerateAccessToken("user-123", "admin")
+	token, _ := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
 		t.Errorf("JWS compact serialization should have 3 parts, got %d", len(parts))
@@ -233,7 +233,7 @@ func TestJWSTokenFormat(t *testing.T) {
 func TestJWETokenFormat(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWE, testSignKey, testEncKey, 15*time.Minute, 7*24*time.Hour)
 
-	token, _ := m.GenerateAccessToken("user-123", "admin")
+	token, _ := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	parts := strings.Split(token, ".")
 	if len(parts) != 5 {
 		t.Errorf("JWE compact serialization should have 5 parts, got %d", len(parts))
@@ -243,8 +243,8 @@ func TestJWETokenFormat(t *testing.T) {
 func TestTokenUniqueness(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWE, testSignKey, testEncKey, 15*time.Minute, 7*24*time.Hour)
 
-	token1, _ := m.GenerateAccessToken("user-123", "admin")
-	token2, _ := m.GenerateAccessToken("user-123", "admin")
+	token1, _ := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
+	token2, _ := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 
 	if token1 == token2 {
 		t.Error("two tokens for same user should be different")
@@ -269,7 +269,7 @@ func TestNewManager_JWEShortEncKey(t *testing.T) {
 func TestNotBeforeValidation(t *testing.T) {
 	m := mustNewManager(t, kexjwt.ModeJWS, testSignKey, "", 15*time.Minute, 7*24*time.Hour)
 
-	token, _ := m.GenerateAccessToken("user-123", "admin")
+	token, _ := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	claims, err := m.ParseToken(token)
 	if err != nil {
 		t.Fatalf("ParseToken: %v", err)
@@ -285,7 +285,7 @@ func TestSignAlgorithm_HS384(t *testing.T) {
 		kexjwt.WithSignAlgorithm("HS384"),
 	)
 
-	token, err := m.GenerateAccessToken("user-123", "admin")
+	token, err := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -304,7 +304,7 @@ func TestSignAlgorithm_HS512(t *testing.T) {
 		kexjwt.WithSignAlgorithm("HS512"),
 	)
 
-	token, err := m.GenerateAccessToken("user-123", "admin")
+	token, err := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -326,7 +326,7 @@ func TestSignAlgorithm_CrossAlgFails(t *testing.T) {
 		kexjwt.WithSignAlgorithm("HS512"),
 	)
 
-	token, _ := mHS256.GenerateAccessToken("user-123", "admin")
+	token, _ := mHS256.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := mHS512.ParseToken(token)
 	if err == nil {
 		t.Error("expected error when parsing HS256 token with HS512 verifier")
@@ -338,7 +338,7 @@ func TestContentEncryption_A128GCM(t *testing.T) {
 		kexjwt.WithContentEncryption("A128GCM"),
 	)
 
-	token, err := m.GenerateAccessToken("user-123", "admin")
+	token, err := m.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -377,7 +377,7 @@ func TestSM2SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("SM2"),
 	)
 
-	token, err := m.GenerateAccessToken("user-sm2", "admin")
+	token, err := m.GenerateAccessToken("user-sm2", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -406,7 +406,7 @@ func TestSM2RefreshToken(t *testing.T) {
 		kexjwt.WithSignAlgorithm("SM2"),
 	)
 
-	token, err := m.GenerateRefreshToken("user-sm2", "user")
+	token, err := m.GenerateRefreshToken("user-sm2", "user", "", []string{"user"})
 	if err != nil {
 		t.Fatalf("GenerateRefreshToken: %v", err)
 	}
@@ -427,7 +427,7 @@ func TestSM2ExpiredToken(t *testing.T) {
 		kexjwt.WithSignAlgorithm("SM2"),
 	)
 
-	token, _ := m.GenerateAccessToken("user-sm2", "admin")
+	token, _ := m.GenerateAccessToken("user-sm2", "admin", "", []string{"admin"})
 	_, err := m.ParseToken(token)
 	if err != kexjwt.ErrExpiredToken {
 		t.Errorf("expected ErrExpiredToken, got %v", err)
@@ -445,7 +445,7 @@ func TestSM2WrongKey(t *testing.T) {
 		kexjwt.WithSignAlgorithm("SM2"),
 	)
 
-	token, _ := m1.GenerateAccessToken("user-123", "admin")
+	token, _ := m1.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := m2.ParseToken(token)
 	if err != kexjwt.ErrInvalidToken {
 		t.Errorf("expected ErrInvalidToken with wrong SM2 key, got %v", err)
@@ -468,7 +468,7 @@ func TestSM4GCMBasic(t *testing.T) {
 		kexjwt.WithContentEncryption("SM4-GCM"),
 	)
 
-	token, err := m.GenerateAccessToken("user-sm4", "admin")
+	token, err := m.GenerateAccessToken("user-sm4", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -494,7 +494,7 @@ func TestSM4GCMRefreshToken(t *testing.T) {
 		kexjwt.WithContentEncryption("SM4-GCM"),
 	)
 
-	token, err := m.GenerateRefreshToken("user-sm4", "user")
+	token, err := m.GenerateRefreshToken("user-sm4", "user", "", []string{"user"})
 	if err != nil {
 		t.Fatalf("GenerateRefreshToken: %v", err)
 	}
@@ -515,7 +515,7 @@ func TestSM4GCMExpiredToken(t *testing.T) {
 		kexjwt.WithContentEncryption("SM4-GCM"),
 	)
 
-	token, _ := m.GenerateAccessToken("user-sm4", "admin")
+	token, _ := m.GenerateAccessToken("user-sm4", "admin", "", []string{"admin"})
 	_, err := m.ParseToken(token)
 	if err != kexjwt.ErrExpiredToken {
 		t.Errorf("expected ErrExpiredToken, got %v", err)
@@ -533,7 +533,7 @@ func TestSM4GCMWrongKey(t *testing.T) {
 		kexjwt.WithContentEncryption("SM4-GCM"),
 	)
 
-	token, _ := m1.GenerateAccessToken("user-123", "admin")
+	token, _ := m1.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := m2.ParseToken(token)
 	if err == nil {
 		t.Error("expected error with wrong SM4 key")
@@ -559,7 +559,7 @@ func TestSM2SM4FullJWE(t *testing.T) {
 		kexjwt.WithContentEncryption("SM4-GCM"),
 	)
 
-	token, err := m.GenerateAccessToken("user-guomi", "admin")
+	token, err := m.GenerateAccessToken("user-guomi", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -585,8 +585,8 @@ func TestSM2SM4TokenUniqueness(t *testing.T) {
 		kexjwt.WithContentEncryption("SM4-GCM"),
 	)
 
-	token1, _ := m.GenerateAccessToken("user-guomi", "admin")
-	token2, _ := m.GenerateAccessToken("user-guomi", "admin")
+	token1, _ := m.GenerateAccessToken("user-guomi", "admin", "", []string{"admin"})
+	token2, _ := m.GenerateAccessToken("user-guomi", "admin", "", []string{"admin"})
 
 	if token1 == token2 {
 		t.Error("two SM4-GCM tokens for same user should be different (different IV)")
@@ -603,8 +603,8 @@ func TestSM2AlgorithmAliases(t *testing.T) {
 		kexjwt.WithSignAlgorithm("SM2-SM3"),
 	)
 
-	token1, _ := m1.GenerateAccessToken("user-1", "admin")
-	token2, _ := m2.GenerateAccessToken("user-1", "admin")
+	token1, _ := m1.GenerateAccessToken("user-1", "admin", "", []string{"admin"})
+	token2, _ := m2.GenerateAccessToken("user-1", "admin", "", []string{"admin"})
 
 	claims1, err := m1.ParseToken(token1)
 	if err != nil {
@@ -627,7 +627,7 @@ func TestRS256SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("RS256"),
 	)
 
-	token, err := m.GenerateAccessToken("user-rsa", "admin")
+	token, err := m.GenerateAccessToken("user-rsa", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -648,7 +648,7 @@ func TestRS384SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("RS384"),
 	)
 
-	token, err := m.GenerateAccessToken("user-rsa384", "admin")
+	token, err := m.GenerateAccessToken("user-rsa384", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -669,7 +669,7 @@ func TestRS512SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("RS512"),
 	)
 
-	token, err := m.GenerateAccessToken("user-rsa512", "admin")
+	token, err := m.GenerateAccessToken("user-rsa512", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -690,7 +690,7 @@ func TestPS256SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("PS256"),
 	)
 
-	token, err := m.GenerateAccessToken("user-ps256", "admin")
+	token, err := m.GenerateAccessToken("user-ps256", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -711,7 +711,7 @@ func TestPS384SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("PS384"),
 	)
 
-	token, err := m.GenerateAccessToken("user-ps384", "admin")
+	token, err := m.GenerateAccessToken("user-ps384", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -732,7 +732,7 @@ func TestPS512SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("PS512"),
 	)
 
-	token, err := m.GenerateAccessToken("user-ps512", "admin")
+	token, err := m.GenerateAccessToken("user-ps512", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -753,7 +753,7 @@ func TestES256SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("ES256"),
 	)
 
-	token, err := m.GenerateAccessToken("user-ec256", "admin")
+	token, err := m.GenerateAccessToken("user-ec256", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -774,7 +774,7 @@ func TestES384SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("ES384"),
 	)
 
-	token, err := m.GenerateAccessToken("user-ec384", "admin")
+	token, err := m.GenerateAccessToken("user-ec384", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -795,7 +795,7 @@ func TestES512SignAndVerify(t *testing.T) {
 		kexjwt.WithSignAlgorithm("ES512"),
 	)
 
-	token, err := m.GenerateAccessToken("user-ec512", "admin")
+	token, err := m.GenerateAccessToken("user-ec512", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -820,7 +820,7 @@ func TestRSAWrongKey(t *testing.T) {
 		kexjwt.WithSignAlgorithm("RS256"),
 	)
 
-	token, _ := m1.GenerateAccessToken("user-123", "admin")
+	token, _ := m1.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := m2.ParseToken(token)
 	if err != kexjwt.ErrInvalidToken {
 		t.Errorf("expected ErrInvalidToken with wrong RSA key, got %v", err)
@@ -838,7 +838,7 @@ func TestECDSAWrongKey(t *testing.T) {
 		kexjwt.WithSignAlgorithm("ES256"),
 	)
 
-	token, _ := m1.GenerateAccessToken("user-123", "admin")
+	token, _ := m1.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := m2.ParseToken(token)
 	if err != kexjwt.ErrInvalidToken {
 		t.Errorf("expected ErrInvalidToken with wrong ECDSA key, got %v", err)
@@ -870,7 +870,7 @@ func TestRS256WithJWE(t *testing.T) {
 		kexjwt.WithSignAlgorithm("RS256"),
 	)
 
-	token, err := m.GenerateAccessToken("user-rsa-jwe", "admin")
+	token, err := m.GenerateAccessToken("user-rsa-jwe", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -891,7 +891,7 @@ func TestES256WithJWE(t *testing.T) {
 		kexjwt.WithSignAlgorithm("ES256"),
 	)
 
-	token, err := m.GenerateAccessToken("user-ec-jwe", "admin")
+	token, err := m.GenerateAccessToken("user-ec-jwe", "admin", "", []string{"admin"})
 	if err != nil {
 		t.Fatalf("GenerateAccessToken: %v", err)
 	}
@@ -915,7 +915,7 @@ func TestRSACrossAlgFails(t *testing.T) {
 		kexjwt.WithSignAlgorithm("PS256"),
 	)
 
-	token, _ := mRS256.GenerateAccessToken("user-123", "admin")
+	token, _ := mRS256.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := mPS256.ParseToken(token)
 	if err == nil {
 		t.Error("expected error when parsing RS256 token with PS256 verifier")
@@ -932,7 +932,7 @@ func TestECDSACrossAlgFails(t *testing.T) {
 		kexjwt.WithSignAlgorithm("HS256"),
 	)
 
-	token, _ := mES256.GenerateAccessToken("user-123", "admin")
+	token, _ := mES256.GenerateAccessToken("user-123", "admin", "", []string{"admin"})
 	_, err := mHS256.ParseToken(token)
 	if err == nil {
 		t.Error("expected error when parsing ES256 token with HS256 verifier")
@@ -946,7 +946,7 @@ func TestRSAExpiredToken(t *testing.T) {
 		kexjwt.WithSignAlgorithm("RS256"),
 	)
 
-	token, _ := m.GenerateAccessToken("user-rsa", "admin")
+	token, _ := m.GenerateAccessToken("user-rsa", "admin", "", []string{"admin"})
 	_, err := m.ParseToken(token)
 	if err != kexjwt.ErrExpiredToken {
 		t.Errorf("expected ErrExpiredToken, got %v", err)
@@ -960,7 +960,7 @@ func TestECDSAExpiredToken(t *testing.T) {
 		kexjwt.WithSignAlgorithm("ES256"),
 	)
 
-	token, _ := m.GenerateAccessToken("user-ec", "admin")
+	token, _ := m.GenerateAccessToken("user-ec", "admin", "", []string{"admin"})
 	_, err := m.ParseToken(token)
 	if err != kexjwt.ErrExpiredToken {
 		t.Errorf("expected ErrExpiredToken, got %v", err)

@@ -45,6 +45,8 @@ type Claims struct {
 	JWTID     string                 `json:"jti,omitempty"`
 	UserID    string                 `json:"uid"`
 	Role      string                 `json:"role"`
+	TenantID  string                 `json:"tid,omitempty"`
+	Roles     []string               `json:"roles,omitempty"`
 	TokenType string                 `json:"type"`
 	Extra     map[string]interface{} `json:"extra,omitempty"`
 }
@@ -334,7 +336,7 @@ func (m *JWTManager) initAESKey(encKey string) error {
 	return nil
 }
 
-func (m *JWTManager) generateToken(userID, role, tokenType string, expiry time.Duration) (string, error) {
+func (m *JWTManager) generateToken(userID, role, tenantID string, roles []string, tokenType string, expiry time.Duration) (string, error) {
 	now := time.Now()
 	jti, err := kexrandom.NewUUIDString()
 	if err != nil {
@@ -351,6 +353,8 @@ func (m *JWTManager) generateToken(userID, role, tokenType string, expiry time.D
 		JWTID:     jti,
 		UserID:    userID,
 		Role:      role,
+		TenantID:  tenantID,
+		Roles:     roles,
 		TokenType: tokenType,
 	}
 
@@ -453,12 +457,12 @@ func (m *JWTManager) generateSM4JWE(payload []byte) (string, error) {
 	return protectedB64 + "." + encryptedKey + "." + ivB64 + "." + ciphertextB64 + "." + tagB64, nil
 }
 
-func (m *JWTManager) GenerateAccessToken(userID, role string) (string, error) {
-	return m.generateToken(userID, role, "access", m.accessExpiry)
+func (m *JWTManager) GenerateAccessToken(userID, role, tenantID string, roles []string) (string, error) {
+	return m.generateToken(userID, role, tenantID, roles, "access", m.accessExpiry)
 }
 
-func (m *JWTManager) GenerateRefreshToken(userID, role string) (string, error) {
-	return m.generateToken(userID, role, "refresh", m.refreshExpiry)
+func (m *JWTManager) GenerateRefreshToken(userID, role, tenantID string, roles []string) (string, error) {
+	return m.generateToken(userID, role, tenantID, roles, "refresh", m.refreshExpiry)
 }
 
 func (m *JWTManager) ParseToken(tokenString string) (*Claims, error) {

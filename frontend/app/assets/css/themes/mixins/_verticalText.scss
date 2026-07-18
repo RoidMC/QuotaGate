@@ -1,4 +1,4 @@
-@mixin vertical-text($text-color: white, $bracket-color: var(--h-color-yellow-400)) {
+@mixin vertical-text($text-color: white, $bracket-color: var(--h-primary)) {
     position: absolute;
     top: 0;
     right: 0;
@@ -18,16 +18,16 @@
         text-orientation: mixed;
         font-size: clamp(0.75rem, 2vw, 1rem);
         font-weight: bold;
-        letter-spacing: 0.5em;
+        letter-spacing: 0.5rem;
 
         &.bracket {
             color: $bracket-color;
-            padding-bottom: 0.5em;
+            padding-bottom: 0.2rem;
         }
 
         &.text {
             color: $text-color;
-            padding: 0.5em 0;
+            padding: 0.5rem 0;
         }
     }
 }
