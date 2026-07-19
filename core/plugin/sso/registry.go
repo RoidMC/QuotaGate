@@ -54,8 +54,16 @@ func (r *Registry) RegisterFactory(f ProviderFactory) {
 
 // New instantiates a provider for a single request using per-tenant config.
 // The caller must have already verified the tenant has this provider enabled
-// (i.e. ProviderConfig came from a DB row).
+// (i.e. ProviderConfig came from a DB row). New validates that Name and
+// TenantID are non-empty so an empty/zero-value config fails loudly instead
+// of silently looking up the "" factory.
 func (r *Registry) New(cfg ProviderConfig) (Provider, error) {
+	if cfg.Name == "" {
+		return nil, fmt.Errorf("sso: ProviderConfig.Name is empty")
+	}
+	if cfg.TenantID == "" {
+		return nil, fmt.Errorf("sso: ProviderConfig.TenantID is empty")
+	}
 	r.mu.RLock()
 	f, ok := r.factories[cfg.Name]
 	r.mu.RUnlock()

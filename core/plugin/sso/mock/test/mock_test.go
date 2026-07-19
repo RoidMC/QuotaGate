@@ -158,7 +158,7 @@ func TestQRMock_ExpiredTicket(t *testing.T) {
 	reg := mock.NewRegistry(store)
 
 	cfg := cfgWith("mock-wechat-mp", map[string]string{
-		mock.MockExtraTTL: "1s",
+		mock.MockExtraTTL: "50ms",
 	})
 	p, err := reg.New(cfg)
 	if err != nil {
@@ -172,7 +172,9 @@ func TestQRMock_ExpiredTicket(t *testing.T) {
 		t.Fatalf("Generate: %v", err)
 	}
 
-	time.Sleep(1500 * time.Millisecond)
+	// 50ms TTL + 100ms wait keeps the test fast while avoiding flakiness
+	// from scheduler jitter on slow CI machines.
+	time.Sleep(100 * time.Millisecond)
 
 	status, _, err := qp.Poll(ctx, ticket)
 	if err != nil {

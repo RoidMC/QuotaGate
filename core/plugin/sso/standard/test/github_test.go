@@ -203,7 +203,7 @@ func TestGitHub_CompleteAuth_EmailFallback(t *testing.T) {
 
 func TestGitHub_FactoryRequiresCredentials(t *testing.T) {
 	reg := sso.DefaultRegistry()
-	_, err := reg.New(sso.ProviderConfig{Name: "github"})
+	_, err := reg.New(sso.ProviderConfig{TenantID: "test", Name: "github"})
 	if err == nil {
 		t.Fatal("expected error for empty ClientID/ClientSecret")
 	}

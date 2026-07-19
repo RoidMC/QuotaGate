@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/roidmc/quotagate/internal/util/random"
@@ -111,7 +112,18 @@ func (m *redirectInstance) BeginAuth(ctx context.Context, state string) (string,
 	}{time.Now()}, defaultStateTTL); err != nil {
 		return "", fmt.Errorf("sso/mock: store state: %w", err)
 	}
-	return fmt.Sprintf("%s/oauth/authorize?state=%s", m.baseURL, state), nil
+	// Build the URL with proper escaping — state is a UUID in normal use,
+	// but robust URL construction avoids surprises if it ever carries other
+	// characters and keeps the mock honest as a reference implementation.
+	u, err := url.Parse(m.baseURL)
+	if err != nil {
+		return "", fmt.Errorf("sso/mock: parse base url: %w", err)
+	}
+	u = u.JoinPath("oauth", "authorize")
+	q := u.Query()
+	q.Set("state", state)
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }
 
 func (m *redirectInstance) CompleteAuth(ctx context.Context, code string) (*sso.Assertion, error) {
@@ -124,8 +136,8 @@ func (m *redirectInstance) CompleteAuth(ctx context.Context, code string) (*sso.
 		AvatarURL: "https://avatars.githubusercontent.com/u/3781234?v=4",
 		HTMLURL:   "https://github.com/mockuser",
 		Name:      "Mock User",
-		Company:   "Casbin",
-		Blog:      "https://casbin.org",
+		Company:   "RoidMC Studios",
+		Blog:      "https://roidmc.com",
 		Location:  "Bay Area",
 		Email:     fmt.Sprintf("mockuser-%s@example.com", code),
 		Bio:       "My bio",
@@ -159,9 +171,8 @@ func (m *redirectInstance) CompleteAuth(ctx context.Context, code string) (*sso.
 // ---- QRMock (WeChat MiniProgram-shaped) ----
 
 type qrInstance struct {
-	store  kexswiftdb.Store
-	prefix string
-	ttl    time.Duration
+	store kexswiftdb.Store
+	ttl   time.Duration
 }
 
 func (m *qrInstance) Name() string   { return "mock-wechat-mp" }
@@ -176,7 +187,7 @@ func (m *qrInstance) Generate(ctx context.Context) (ticket, qrData string, err e
 	if err := kexswiftdb.SetJSON(ctx, m.store, nsMockQR, ticket, entry, m.ttl); err != nil {
 		return "", "", fmt.Errorf("sso/mock: store ticket: %w", err)
 	}
-	return ticket, fmt.Sprintf("%s:%s", m.prefix, ticket), nil
+	return ticket, fmt.Sprintf("kex:sso:mock:qr:%s", ticket), nil
 }
 
 func (m *qrInstance) ResolveExchangeCode(ctx context.Context, ticket, code string) (*sso.Assertion, error) {
@@ -292,5 +303,5 @@ func (f qrMockFactory) New(cfg sso.ProviderConfig) (sso.Provider, error) {
 			ttl = parsed
 		}
 	}
-	return &qrInstance{store: f.store, prefix: "kex:sso:mock:qr", ttl: ttl}, nil
+	return &qrInstance{store: f.store, ttl: ttl}, nil
 }
