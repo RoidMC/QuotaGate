@@ -106,8 +106,9 @@ type AuthzManager struct {
 }
 
 // NewAuthzManager creates the authorization manager.
-// If enableABAC is true, a second enforcer backed by casbin_rule_abac is set up.
-func NewAuthzManager(db *gorm.DB, enableABAC bool, opts ...AuthzManagerOption) (*AuthzManager, error) {
+// ABAC enforcer is unconditionally initialized; there is no longer a toggle
+// to disable it. RBAC + ABAC are both always active.
+func NewAuthzManager(db *gorm.DB, opts ...AuthzManagerOption) (*AuthzManager, error) {
 	adapter, err := gormadapter.NewAdapterByDBUseTableName(db, "", rbacTable)
 	if err != nil {
 		return nil, fmt.Errorf("quotagate/authz: failed to create rbac adapter: %w", err)
@@ -138,26 +139,24 @@ func NewAuthzManager(db *gorm.DB, enableABAC bool, opts ...AuthzManagerOption) (
 		adapter:      adapter,
 	}
 
-	if enableABAC {
-		abacAdapter, err := gormadapter.NewAdapterByDBUseTableName(db, "", abacTable)
-		if err != nil {
-			return nil, fmt.Errorf("quotagate/authz: failed to create abac adapter: %w", err)
-		}
-		abacModel, err := casbinmodel.NewModelFromString(ABACWithDomainsModel)
-		if err != nil {
-			return nil, fmt.Errorf("quotagate/authz: failed to create abac model: %w", err)
-		}
-		abacEnforcer, err := casbin.NewSyncedEnforcer(abacModel, abacAdapter)
-		if err != nil {
-			return nil, fmt.Errorf("quotagate/authz: failed to create abac enforcer: %w", err)
-		}
-		abacEnforcer.EnableAutoSave(true)
-		if err := abacEnforcer.LoadPolicy(); err != nil {
-			return nil, fmt.Errorf("quotagate/authz: failed to load abac policy: %w", err)
-		}
-		manager.abacEnforcer = abacEnforcer
-		manager.abacAdapter = abacAdapter
+	abacAdapter, err := gormadapter.NewAdapterByDBUseTableName(db, "", abacTable)
+	if err != nil {
+		return nil, fmt.Errorf("quotagate/authz: failed to create abac adapter: %w", err)
 	}
+	abacModel, err := casbinmodel.NewModelFromString(ABACWithDomainsModel)
+	if err != nil {
+		return nil, fmt.Errorf("quotagate/authz: failed to create abac model: %w", err)
+	}
+	abacEnforcer, err := casbin.NewSyncedEnforcer(abacModel, abacAdapter)
+	if err != nil {
+		return nil, fmt.Errorf("quotagate/authz: failed to create abac enforcer: %w", err)
+	}
+	abacEnforcer.EnableAutoSave(true)
+	if err := abacEnforcer.LoadPolicy(); err != nil {
+		return nil, fmt.Errorf("quotagate/authz: failed to load abac policy: %w", err)
+	}
+	manager.abacEnforcer = abacEnforcer
+	manager.abacAdapter = abacAdapter
 
 	for _, opt := range opts {
 		opt(manager)

@@ -22,7 +22,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 
 func setupTestManager(t *testing.T) *authz.AuthzManager {
 	t.Helper()
-	m := setupTestManagerWithABAC(t, false)
+	m := setupTestManagerWithABAC(t)
 	if err := m.InitRoleRegistry(context.Background(), authz.DefaultSystemRoles()); err != nil {
 		t.Fatalf("failed to init role registry: %v", err)
 	}
@@ -37,10 +37,10 @@ func setupTestManager(t *testing.T) *authz.AuthzManager {
 	return m
 }
 
-func setupTestManagerWithABAC(t *testing.T, enableABAC bool) *authz.AuthzManager {
+func setupTestManagerWithABAC(t *testing.T) *authz.AuthzManager {
 	t.Helper()
 	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, enableABAC)
+	m, err := authz.NewAuthzManager(db)
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)
 	}
@@ -52,7 +52,7 @@ func setupTestManagerWithABAC(t *testing.T, enableABAC bool) *authz.AuthzManager
 
 func TestNewAuthzManager(t *testing.T) {
 	db := setupTestDB(t)
-	m, err := authz.NewAuthzManager(db, false)
+	m, err := authz.NewAuthzManager(db)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -256,7 +256,7 @@ func TestAuthzManager_Close(t *testing.T) {
 }
 
 func TestAuthzManager_ABAC(t *testing.T) {
-	m := setupTestManagerWithABAC(t, true)
+	m := setupTestManagerWithABAC(t)
 
 	t.Run("basic role-based ABAC rule", func(t *testing.T) {
 		added, err := m.AddABACPolicy(`r.sub.ID == "admin"`, "", "GET", "/api/admin", `r.obj.Owner == ""`)

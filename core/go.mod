@@ -33,7 +33,6 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-sql-driver/mysql v1.10.0 // indirect
-	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
@@ -62,7 +61,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20260611194520-c48552f49976 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect

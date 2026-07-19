@@ -18,7 +18,7 @@ func setupMiddlewareTestManager(t *testing.T) *authz.AuthzManager {
 	if err != nil {
 		t.Fatalf("failed to open test db: %v", err)
 	}
-	m, err := authz.NewAuthzManager(db, false)
+	m, err := authz.NewAuthzManager(db)
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)
 	}

@@ -145,7 +145,7 @@ m = g(r.subName, p.subName, r.subOwner) && keyMatch(r.subOwner, p.subOwner) && r
 
 1. Middleware 从 Token context 读取 `userID`、`tenantID`、`roles`。
 2. 路径 `sanitizePath` 阻止 `..` 遍历。
-3. 若启用 `StrictValidation`，比较 Token roles 与 DB effective roles。
+3. 若已注入 RoleResolver，强制比较 Token roles 与 DB effective roles（不可关闭）。
 4. 调用 `AuthzManager.EnforceRBAC(ctx, tenantID, userID, roles, method, path, objOwner)`。
    - `roles` 参数保留兼容性，实际权限由全局 Enforcer 中的 `g` 规则解析。
 5. RBAC 通过后检查 `objOwner` 租户隔离。

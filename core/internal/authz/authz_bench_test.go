@@ -26,7 +26,7 @@ func setupBenchDB(b *testing.B) *gorm.DB {
 
 func BenchmarkAuthz_GlobalEnforcer(b *testing.B) {
 	db := setupBenchDB(b)
-	mgr, err := authz.NewAuthzManager(db, false)
+	mgr, err := authz.NewAuthzManager(db)
 	if err != nil {
 		b.Fatalf("NewAuthzManager failed: %v", err)
 	}
@@ -71,7 +71,7 @@ func BenchmarkAuthz_TempEnforcerPerRequest(b *testing.B) {
 	}
 
 	// Seed the adapter with default p policies once.
-	seedMgr, err := authz.NewAuthzManager(db, false)
+	seedMgr, err := authz.NewAuthzManager(db)
 	if err != nil {
 		b.Fatalf("failed to create seed manager: %v", err)
 	}
@@ -163,7 +163,7 @@ func BenchmarkAuthz_InitGroupingRelations_10k(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		db := setupBenchDB(b)
-		mgr, err := authz.NewAuthzManager(db, false)
+		mgr, err := authz.NewAuthzManager(db)
 		if err != nil {
 			b.Fatalf("NewAuthzManager failed: %v", err)
 		}
@@ -182,7 +182,7 @@ func BenchmarkAuthz_InitGroupingRelations_10k(b *testing.B) {
 // grows into the tens of thousands.
 func BenchmarkAuthz_10kUsers(b *testing.B) {
 	db := setupBenchDB(b)
-	mgr, err := authz.NewAuthzManager(db, false)
+	mgr, err := authz.NewAuthzManager(db)
 	if err != nil {
 		b.Fatalf("NewAuthzManager failed: %v", err)
 	}

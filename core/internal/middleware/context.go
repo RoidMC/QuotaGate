@@ -11,8 +11,9 @@ import (
 type contextKey string
 
 const (
-	userIDKey   contextKey = "user_id"
-	userRoleKey contextKey = "user_role"
+	userIDKey    contextKey = "user_id"
+	userRoleKey  contextKey = "user_role"
+	userRolesKey contextKey = "user_roles"
 )
 
 func WithUserID(ctx context.Context, userID string) context.Context {
@@ -30,6 +31,15 @@ func WithUserRole(ctx context.Context, role string) context.Context {
 
 func GetUserRole(ctx context.Context) string {
 	v, _ := ctx.Value(userRoleKey).(string)
+	return v
+}
+
+func WithUserRoles(ctx context.Context, roles []string) context.Context {
+	return context.WithValue(ctx, userRolesKey, roles)
+}
+
+func GetUserRoles(ctx context.Context) []string {
+	v, _ := ctx.Value(userRolesKey).([]string)
 	return v
 }
 

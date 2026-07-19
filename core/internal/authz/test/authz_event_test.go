@@ -18,7 +18,7 @@ func TestAuthzManager_EventSync_Assignment(t *testing.T) {
 	bus := event.NewBus()
 
 	makeManager := func(instanceID string) *authz.AuthzManager {
-		m, err := authz.NewAuthzManager(db, false, authz.WithEventBus(bus, instanceID, nil))
+		m, err := authz.NewAuthzManager(db, authz.WithEventBus(bus, instanceID, nil))
 		if err != nil {
 			t.Fatalf("failed to create manager %s: %v", instanceID, err)
 		}
@@ -65,7 +65,7 @@ func TestAuthzManager_EventSync_LocalEventFiltered(t *testing.T) {
 	db := setupTestDB(t)
 	bus := event.NewBus()
 
-	m, err := authz.NewAuthzManager(db, false, authz.WithEventBus(bus, "instance-local", nil))
+	m, err := authz.NewAuthzManager(db, authz.WithEventBus(bus, "instance-local", nil))
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)
 	}

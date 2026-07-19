@@ -40,6 +40,7 @@ const (
 	ActionPolicyDelete EventType = "policy.delete"
 	ActionRoleAssign   EventType = "role.assign"
 	ActionRoleRevoke   EventType = "role.revoke"
+	ActionRoleChanged  EventType = "role.changed"
 
 	ActionTenantCreate EventType = "tenant.create"
 	ActionTenantUpdate EventType = "tenant.update"
