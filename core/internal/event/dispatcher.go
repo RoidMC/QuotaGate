@@ -250,10 +250,7 @@ type Dispatcher struct {
 func NewDispatcher(timeout time.Duration, opts ...DispatcherOption) *Dispatcher {
 	policy := ssrf.DefaultPolicy()
 	d := &Dispatcher{
-		client: &http.Client{
-			Timeout:       timeout,
-			CheckRedirect: policy.CheckRedirect(),
-		},
+		client:          policy.NewHTTPClient(timeout),
 		signer:          DefaultSigner,
 		rand:            rand.New(rand.NewSource(time.Now().UnixNano())),
 		userAgent:       defaultUserAgent,
@@ -267,10 +264,7 @@ func NewDispatcher(timeout time.Duration, opts ...DispatcherOption) *Dispatcher 
 	}
 
 	if d.client == nil {
-		d.client = &http.Client{
-			Timeout:       timeout,
-			CheckRedirect: policy.CheckRedirect(),
-		}
+		d.client = policy.NewHTTPClient(timeout)
 	}
 
 	if d.maxRespBodySize <= 0 {
@@ -293,10 +287,7 @@ func NewDispatcher(timeout time.Duration, opts ...DispatcherOption) *Dispatcher 
 func NewDispatcherWithSigner(timeout time.Duration, signer *Signer, opts ...DispatcherOption) *Dispatcher {
 	policy := ssrf.DefaultPolicy()
 	d := &Dispatcher{
-		client: &http.Client{
-			Timeout:       timeout,
-			CheckRedirect: policy.CheckRedirect(),
-		},
+		client:          policy.NewHTTPClient(timeout),
 		signer:          signer,
 		rand:            rand.New(rand.NewSource(time.Now().UnixNano())),
 		userAgent:       defaultUserAgent,
@@ -310,10 +301,7 @@ func NewDispatcherWithSigner(timeout time.Duration, signer *Signer, opts ...Disp
 	}
 
 	if d.client == nil {
-		d.client = &http.Client{
-			Timeout:       timeout,
-			CheckRedirect: policy.CheckRedirect(),
-		}
+		d.client = policy.NewHTTPClient(timeout)
 	}
 
 	if d.maxRespBodySize <= 0 {

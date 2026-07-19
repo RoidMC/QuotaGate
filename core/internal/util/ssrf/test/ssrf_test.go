@@ -1,8 +1,10 @@
 package ssrf_test
 
 import (
+	"context"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/roidmc/quotagate/internal/util/ssrf"
 )
@@ -143,4 +145,160 @@ func TestCheckRedirectNilURL(t *testing.T) {
 	if err := check(req, nil); err != http.ErrUseLastResponse {
 		t.Errorf("expected ErrUseLastResponse for nil URL, got: %v", err)
 	}
+}
+
+// --- DialContext tests ---
+
+func TestDialContextBlocksLoopback(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	dial := p.DialContext()
+
+	_, err := dial(context.Background(), "tcp", "127.0.0.1:80")
+	if err == nil {
+		t.Fatal("expected error for loopback IP")
+	}
+}
+
+func TestDialContextBlocksPrivate(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	dial := p.DialContext()
+
+	_, err := dial(context.Background(), "tcp", "10.0.0.1:80")
+	if err == nil {
+		t.Fatal("expected error for private IP")
+	}
+}
+
+func TestDialContextBlocksLinkLocal(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	dial := p.DialContext()
+
+	_, err := dial(context.Background(), "tcp", "169.254.169.254:80")
+	if err == nil {
+		t.Fatal("expected error for link-local IP")
+	}
+}
+
+func TestDialContextBlocksZeroIP(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	dial := p.DialContext()
+
+	_, err := dial(context.Background(), "tcp", "0.0.0.0:80")
+	if err == nil {
+		t.Fatal("expected error for 0.0.0.0")
+	}
+}
+
+func TestDialContextBlocksUnspecifiedIPv6(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	dial := p.DialContext()
+
+	_, err := dial(context.Background(), "tcp", "[::]:80")
+	if err == nil {
+		t.Fatal("expected error for ::")
+	}
+}
+
+func TestDialContextAllowLoopback(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	p.AllowLoopback = true
+	p.DialTimeout = 200 * time.Millisecond
+	dial := p.DialContext()
+
+	// Dial loopback — should pass IP check but fail to connect (no service).
+	conn, err := dial(context.Background(), "tcp", "127.0.0.1:1")
+	if err != nil && conn == nil {
+		// IP check passed (no "ssrf: blocked" error); connection refused is fine.
+		// Just verify it's NOT the SSRF block error.
+		if isSSRFError(err) {
+			t.Fatalf("expected IP check to pass, got SSRF block: %v", err)
+		}
+	}
+	if conn != nil {
+		conn.Close()
+	}
+}
+
+func TestDialContextInvalidAddress(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	dial := p.DialContext()
+
+	// Missing port — net.SplitHostPort should fail.
+	_, err := dial(context.Background(), "tcp", "127.0.0.1")
+	if err == nil {
+		t.Fatal("expected error for invalid address (no port)")
+	}
+}
+
+func TestDialContextUnresolvableHost(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	p.DialTimeout = 2 * time.Second
+	dial := p.DialContext()
+
+	// Use a domain that definitely doesn't resolve.
+	_, err := dial(context.Background(), "tcp", "nonexistent.invalid:80")
+	if err == nil {
+		t.Fatal("expected error for unresolvable host")
+	}
+}
+
+func TestNewHTTPClient(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	client := p.NewHTTPClient(5 * time.Second)
+
+	if client == nil {
+		t.Fatal("expected non-nil client")
+	}
+	if client.Timeout != 5*time.Second {
+		t.Errorf("timeout = %v, want 5s", client.Timeout)
+	}
+	if client.Transport == nil {
+		t.Error("expected non-nil transport")
+	}
+	if client.CheckRedirect == nil {
+		t.Error("expected non-nil CheckRedirect")
+	}
+}
+
+func TestNewHTTPTransport(t *testing.T) {
+	p := ssrf.DefaultPolicy()
+	transport := p.NewHTTPTransport()
+
+	if transport == nil {
+		t.Fatal("expected non-nil transport")
+	}
+	if transport.DialContext == nil {
+		t.Error("expected non-nil DialContext")
+	}
+	if transport.MaxIdleConns != 100 {
+		t.Errorf("MaxIdleConns = %d, want 100", transport.MaxIdleConns)
+	}
+}
+
+func TestPolicyDialTimeoutDefault(t *testing.T) {
+	p := &ssrf.Policy{} // zero value — DialTimeout is 0, should default to 10s
+	// We can't easily test the actual timeout without a real connection,
+	// but we can verify DialContext doesn't panic with zero DialTimeout.
+	dial := p.DialContext()
+	if dial == nil {
+		t.Fatal("expected non-nil DialContext")
+	}
+}
+
+// isSSRFError returns true if the error is an SSRF block (not a connection error).
+func isSSRFError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return contains(msg, "ssrf:") && contains(msg, "blocked")
+}
+
+func contains(s, substr string) bool {
+	for i := 0; i+len(substr) <= len(s); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }
