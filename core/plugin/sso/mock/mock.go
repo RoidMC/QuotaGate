@@ -146,12 +146,13 @@ func (m *redirectInstance) CompleteAuth(ctx context.Context, code string) (*sso.
 	// Example mapping (NOT a contract): a real github provider maps the same
 	// way, a wechat-web provider maps differently, etc.
 	return &sso.Assertion{
-		Provider:    m.Name(),
-		Subject:     fmt.Sprintf("%d", gh.ID),
-		Username:    gh.Login,
-		DisplayName: gh.Name,
-		Email:       gh.Email,
-		AvatarURL:   gh.AvatarURL,
+		Provider:      m.Name(),
+		Subject:       fmt.Sprintf("%d", gh.ID),
+		Username:      gh.Login,
+		DisplayName:   gh.Name,
+		Email:         gh.Email,
+		EmailVerified: true, // mock synthesises verified emails; real providers carry the flag from /user/emails
+		AvatarURL:     gh.AvatarURL,
 		Raw: map[string]any{
 			"login":      gh.Login,
 			"id":         gh.ID,

@@ -115,9 +115,11 @@ func (p *githubProvider) CompleteAuth(ctx context.Context, code string) (*sso.As
 	// 3. GitHub may return an empty email if the user hid it. Fall back to
 	//    /user/emails and pick the primary verified one — same logic as
 	//    casdoor's github provider.
+	emailVerified := false // default: GH /user does not surface verification
 	if ghUser.Email == "" {
-		if email, err := p.fetchPrimaryEmail(ctx, src); err == nil {
+		if email, verified, err := p.fetchPrimaryEmail(ctx, src); err == nil {
 			ghUser.Email = email
+			emailVerified = verified
 		}
 		// Non-fatal: a user with no resolvable email still logs in; the
 		// AccountLinker decides whether email is required for auto-create.
@@ -126,12 +128,13 @@ func (p *githubProvider) CompleteAuth(ctx context.Context, code string) (*sso.As
 	// 4. Map into Assertion. Id→Subject (as string), Login→Username,
 	//    Name→DisplayName, Email→Email, AvatarUrl→AvatarURL.
 	return &sso.Assertion{
-		Provider:    p.Name(),
-		Subject:     strconv.Itoa(ghUser.ID),
-		Username:    ghUser.Login,
-		DisplayName: ghUser.Name,
-		Email:       ghUser.Email,
-		AvatarURL:   ghUser.AvatarURL,
+		Provider:      p.Name(),
+		Subject:       strconv.Itoa(ghUser.ID),
+		Username:      ghUser.Login,
+		DisplayName:   ghUser.Name,
+		Email:         ghUser.Email,
+		EmailVerified: emailVerified,
+		AvatarURL:     ghUser.AvatarURL,
 		Raw: map[string]any{
 			"login":       ghUser.Login,
 			"id":          ghUser.ID,
@@ -200,22 +203,27 @@ func (p *githubProvider) fetchGitHubUser(ctx context.Context, src oauth2.TokenSo
 	return &u, nil
 }
 
-func (p *githubProvider) fetchPrimaryEmail(ctx context.Context, src oauth2.TokenSource) (string, error) {
+func (p *githubProvider) fetchPrimaryEmail(ctx context.Context, src oauth2.TokenSource) (string, bool, error) {
 	client := oauth2.NewClient(ctx, src)
 	resp, err := client.Get(p.apiBase + "/user/emails")
 	if err != nil {
-		return "", fmt.Errorf("sso/github: fetch /user/emails: %w: %v", sso.ErrProviderUnavailable, err)
+		return "", false, fmt.Errorf("sso/github: fetch /user/emails: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("sso/github: /user/emails returned %d: %w", resp.StatusCode, sso.ErrProviderUnavailable)
+		return "", false, fmt.Errorf("sso/github: /user/emails returned %d: %w", resp.StatusCode, sso.ErrProviderUnavailable)
 	}
 	var emails []githubEmail
 	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
-		return "", fmt.Errorf("sso/github: decode /user/emails: %w: %v", sso.ErrProviderUnavailable, err)
+		return "", false, fmt.Errorf("sso/github: decode /user/emails: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 
 	// Prefer primary + verified; fall back to any verified; then any primary.
+	// Carry the verified flag up so the AccountLinker can populate
+	// model.User.EmailVerified accurately — a primary email that the user
+	// hid from their GitHub profile may be unverified, and blanket-trusting
+	// it opens an account-takeover vector via a malicious GitHub account
+	// that set its primary email to a victim's address.
 	primaryVerified := ""
 	anyVerified := ""
 	anyPrimary := ""
@@ -232,15 +240,18 @@ func (p *githubProvider) fetchPrimaryEmail(ctx context.Context, src oauth2.Token
 		}
 	}
 	if primaryVerified != "" {
-		return primaryVerified, nil
+		return primaryVerified, true, nil
 	}
 	if anyVerified != "" {
-		return anyVerified, nil
+		return anyVerified, true, nil
 	}
 	for _, e := range emails {
 		if e.Primary && anyPrimary == "" {
 			anyPrimary = e.Email
 		}
 	}
-	return anyPrimary, nil
+	// anyPrimary (when reached) is a primary but unverified email. Surface
+	// verified=false so the caller can decide policy (e.g. require email
+	// verification before allowing SSO auto-create).
+	return anyPrimary, false, nil
 }

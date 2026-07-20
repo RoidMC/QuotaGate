@@ -258,6 +258,14 @@ type Assertion struct {
 	// Email is the verified or primary email, when the provider exposes it.
 	Email string `json:"email,omitempty"`
 
+	// EmailVerified reports whether the provider actually verified this
+	// email (e.g. GitHub /user/emails carries a verified flag; OIDC id_token
+	// carries email_verified). Providers that only surface an unverified
+	// primary email MUST set this to false. The AccountLinker uses this to
+	// populate model.User.EmailVerified accurately instead of blanket
+	// trusting every provider-asserted address.
+	EmailVerified bool `json:"email_verified,omitempty"`
+
 	// Phone and CountryCode are populated by providers that expose them.
 	Phone       string `json:"phone,omitempty"`
 	CountryCode string `json:"country_code,omitempty"`

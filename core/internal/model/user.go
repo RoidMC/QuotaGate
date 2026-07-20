@@ -16,17 +16,13 @@ type User struct {
 	DisplayName        string `gorm:"size:128" json:"display_name"`
 	AvatarURL          string `gorm:"size:512" json:"avatar_url"`
 	RegistrationMethod string `gorm:"column:registration_method;size:32;default:password;not null" json:"registration_method"`
-	// Role is the default role used when issuing tokens.
-	// Actual permissions come from UserRoleAssignment; this field is kept for
-	// backward compatibility and simple clients that do not manage assignments.
-	Role        UserRole   `gorm:"size:20;default:user;not null" json:"role"`
-	Status      UserStatus `gorm:"size:20;default:active;not null" json:"status"`
-	Metadata    string     `gorm:"type:text" json:"metadata"`
-	LastLoginIP string     `gorm:"column:last_login_ip;size:45" json:"last_login_ip"`
-	LastLoginAt *time.Time `gorm:"column:last_login_at" json:"last_login_at"`
-	RegisterIP  string     `gorm:"column:register_ip;size:45" json:"register_ip"`
-	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+	Status             UserStatus `gorm:"size:20;default:active;not null" json:"status"`
+	Metadata           string     `gorm:"type:text" json:"metadata"`
+	LastLoginIP        string     `gorm:"column:last_login_ip;size:45" json:"last_login_ip"`
+	LastLoginAt        *time.Time `gorm:"column:last_login_at" json:"last_login_at"`
+	RegisterIP         string     `gorm:"column:register_ip;size:45" json:"register_ip"`
+	CreatedAt          time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt          time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 func (User) TableName() string {
@@ -34,17 +30,6 @@ func (User) TableName() string {
 }
 
 func (User) TenantAware() bool { return true }
-
-type UserRole string
-
-const (
-	RoleAdmin UserRole = "admin"
-	RoleUser  UserRole = "user"
-)
-
-func (r UserRole) IsAdmin() bool {
-	return r == RoleAdmin
-}
 
 type UserStatus string
 
