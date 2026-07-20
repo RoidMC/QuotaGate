@@ -95,14 +95,19 @@ func (p *githubProvider) CompleteAuth(ctx context.Context, code string) (*sso.As
 	//    automatically via the GitHub endpoint.
 	token, err := p.config.Exchange(ctx, code)
 	if err != nil {
-		return nil, fmt.Errorf("sso/github: exchange code: %w", err)
+		// oauth2 surfaces rejected codes, bad signatures, and network errors
+		// all as Exchange errors. Map to ErrExchangeFailed so callers can
+		// distinguish "user-side reject" from "provider down" by inspecting
+		// the wrapped chain (use errors.Is(err, sso.ErrProviderUnavailable)
+		// to detect the latter if oauth2 ever exposes a typed network error).
+		return nil, fmt.Errorf("sso/github: exchange code: %w: %v", sso.ErrExchangeFailed, err)
 	}
 
 	// 2. token → /user profile. We use the token's own HTTP client so the
 	//    Authorization header is set automatically.
 	src := p.config.TokenSource(ctx, token)
 
-	ghUser, err := p.fetchGitHubUser(src)
+	ghUser, err := p.fetchGitHubUser(ctx, src)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +116,7 @@ func (p *githubProvider) CompleteAuth(ctx context.Context, code string) (*sso.As
 	//    /user/emails and pick the primary verified one — same logic as
 	//    casdoor's github provider.
 	if ghUser.Email == "" {
-		if email, err := p.fetchPrimaryEmail(src); err == nil {
+		if email, err := p.fetchPrimaryEmail(ctx, src); err == nil {
 			ghUser.Email = email
 		}
 		// Non-fatal: a user with no resolvable email still logs in; the
@@ -172,37 +177,42 @@ type githubEmail struct {
 	Visibility string `json:"visibility"`
 }
 
-func (p *githubProvider) fetchGitHubUser(src oauth2.TokenSource) (*githubUser, error) {
-	client := oauth2.NewClient(context.Background(), src)
+func (p *githubProvider) fetchGitHubUser(ctx context.Context, src oauth2.TokenSource) (*githubUser, error) {
+	client := oauth2.NewClient(ctx, src)
 	resp, err := client.Get(p.apiBase + "/user")
 	if err != nil {
-		return nil, fmt.Errorf("sso/github: fetch /user: %w", err)
+		return nil, fmt.Errorf("sso/github: fetch /user: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("sso/github: /user returned %d: %s", resp.StatusCode, body)
+		// 4xx (401/404/...) is a provider-side rejection of our token or
+		// request shape; 5xx is provider outage. Both surface as
+		// ErrProviderUnavailable — distinguishing would require parsing
+		// GitHub's error contract, which isn't worth it for login.
+		return nil, fmt.Errorf("sso/github: /user returned %d: %w: %s",
+			resp.StatusCode, sso.ErrProviderUnavailable, body)
 	}
 	var u githubUser
 	if err := json.NewDecoder(resp.Body).Decode(&u); err != nil {
-		return nil, fmt.Errorf("sso/github: decode /user: %w", err)
+		return nil, fmt.Errorf("sso/github: decode /user: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 	return &u, nil
 }
 
-func (p *githubProvider) fetchPrimaryEmail(src oauth2.TokenSource) (string, error) {
-	client := oauth2.NewClient(context.Background(), src)
+func (p *githubProvider) fetchPrimaryEmail(ctx context.Context, src oauth2.TokenSource) (string, error) {
+	client := oauth2.NewClient(ctx, src)
 	resp, err := client.Get(p.apiBase + "/user/emails")
 	if err != nil {
-		return "", fmt.Errorf("sso/github: fetch /user/emails: %w", err)
+		return "", fmt.Errorf("sso/github: fetch /user/emails: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("sso/github: /user/emails returned %d", resp.StatusCode)
+		return "", fmt.Errorf("sso/github: /user/emails returned %d: %w", resp.StatusCode, sso.ErrProviderUnavailable)
 	}
 	var emails []githubEmail
 	if err := json.NewDecoder(resp.Body).Decode(&emails); err != nil {
-		return "", fmt.Errorf("sso/github: decode /user/emails: %w", err)
+		return "", fmt.Errorf("sso/github: decode /user/emails: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 
 	// Prefer primary + verified; fall back to any verified; then any primary.

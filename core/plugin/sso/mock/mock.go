@@ -32,11 +32,6 @@ const (
 	defaultTicketTTL = 5 * time.Minute
 )
 
-var (
-	errStateNotFound  = errors.New("sso/mock: oauth state not found or expired")
-	errTicketNotFound = errors.New("sso/mock: qr ticket not found or expired")
-)
-
 // MockExtraBaseURL is the ProviderConfig.Extra key that configures the
 // redirect mock's authorization-server base URL. Tests use it to point
 // the mock at an httptest.Server; production code never touches it.
@@ -110,7 +105,10 @@ func (m *redirectInstance) BeginAuth(ctx context.Context, state string) (string,
 	if err := kexswiftdb.SetJSON(ctx, m.store, nsMockRedirect, state, struct {
 		CreatedAt time.Time `json:"created_at"`
 	}{time.Now()}, defaultStateTTL); err != nil {
-		return "", fmt.Errorf("sso/mock: store state: %w", err)
+		// Infrastructure failure — not a state lifecycle error, so wrap
+		// ErrProviderUnavailable rather than ErrStateNotFound (the latter
+		// is for "state presented but not recognised").
+		return "", fmt.Errorf("sso/mock: store state: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 	// Build the URL with proper escaping — state is a UUID in normal use,
 	// but robust URL construction avoids surprises if it ever carries other
@@ -185,7 +183,7 @@ func (m *qrInstance) Generate(ctx context.Context) (ticket, qrData string, err e
 		ExpiresAt: time.Now().Add(m.ttl).Unix(),
 	}
 	if err := kexswiftdb.SetJSON(ctx, m.store, nsMockQR, ticket, entry, m.ttl); err != nil {
-		return "", "", fmt.Errorf("sso/mock: store ticket: %w", err)
+		return "", "", fmt.Errorf("sso/mock: store ticket: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 	return ticket, fmt.Sprintf("kex:sso:mock:qr:%s", ticket), nil
 }
@@ -193,13 +191,19 @@ func (m *qrInstance) Generate(ctx context.Context) (ticket, qrData string, err e
 func (m *qrInstance) ResolveExchangeCode(ctx context.Context, ticket, code string) (*sso.Assertion, error) {
 	result, err := kexswiftdb.MutateJSON[qrTicketEntry](ctx, m.store, nsMockQR, ticket, func(current *qrTicketEntry) (qrTicketEntry, bool, time.Duration, error) {
 		if current == nil {
-			return qrTicketEntry{}, false, 0, errTicketNotFound
+			return qrTicketEntry{}, false, 0, sso.ErrTicketNotFound
 		}
 		if current.isExpired() {
-			return qrTicketEntry{}, false, 0, errTicketNotFound
+			return qrTicketEntry{}, false, 0, sso.ErrTicketExpired
 		}
 		if current.Status != sso.StatusPending {
-			return qrTicketEntry{}, false, 0, fmt.Errorf("sso/mock: ticket not pending (status=%s)", current.Status)
+			// Distinguish "already confirmed" (legit retry by the same app)
+			// from other terminal states, so callers can suppress duplicate
+			// confirmations without surfacing them as errors.
+			if current.Status == sso.StatusConfirmed {
+				return qrTicketEntry{}, false, 0, fmt.Errorf("sso/mock: ticket already confirmed: %w", sso.ErrTicketConflict)
+			}
+			return qrTicketEntry{}, false, 0, fmt.Errorf("sso/mock: ticket not pending (status=%s): %w", current.Status, sso.ErrTicketConflict)
 		}
 		// Simulate code2session: the exchange code becomes the openid.
 		current.Status = sso.StatusConfirmed
@@ -216,7 +220,9 @@ func (m *qrInstance) ResolveExchangeCode(ctx context.Context, ticket, code strin
 		return nil, err
 	}
 	if result == nil {
-		return nil, errTicketNotFound
+		// Should not happen: MutateJSON returns the stored value on a
+		// successful commit. Treat defensively as a conflict.
+		return nil, sso.ErrTicketConflict
 	}
 	return m.sessionToAssertion(result.Session), nil
 }
@@ -225,9 +231,14 @@ func (m *qrInstance) Poll(ctx context.Context, ticket string) (status string, as
 	entry, err := kexswiftdb.GetJSON[qrTicketEntry](ctx, m.store, nsMockQR, ticket)
 	if err != nil {
 		if errors.Is(err, kexswiftdb.ErrKeyNotFound) {
+			// Missing ticket is a business-level "expired/unknown" status,
+			// not an internal error — the polling client just sees Expired.
 			return sso.StatusExpired, nil, nil
 		}
-		return "", nil, err
+		// Real store failure (badger IO, etc.). Surface as provider-side
+		// outage so PollQR callers can map to 5xx rather than silently
+		// returning Expired.
+		return "", nil, fmt.Errorf("sso/mock: poll ticket: %w: %v", sso.ErrProviderUnavailable, err)
 	}
 	if entry.isExpired() {
 		return sso.StatusExpired, nil, nil

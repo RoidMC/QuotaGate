@@ -40,6 +40,59 @@ package sso
 
 import (
 	"context"
+	"errors"
+)
+
+// Sentinel errors for SSO provider failures. These mirror the style of
+// plugin/identity's exported sentinel errors (ErrQRCodeNotFound etc.) so
+// callers can branch with errors.Is instead of matching error strings.
+//
+// Two families:
+//
+//   - Ticket / state lifecycle (used by QRProvider and the OAuth state
+//     helpers): ErrTicketNotFound, ErrTicketExpired, ErrTicketConflict,
+//     ErrTicketAlreadyScanned, ErrStateNotFound.
+//   - External IdP interaction (used by RedirectProvider.CompleteAuth and
+//     QRProvider.ResolveExchangeCode): ErrExchangeFailed, ErrProviderUnavailable.
+//
+// Providers wrap underlying detail with fmt.Errorf("...: %w", sentinel) so
+// the sentinel stays identifiable while the wrapped message carries context
+// (HTTP status, response body, network error).
+var (
+	// ErrTicketNotFound means the QR ticket does not exist in the store or
+	// has already been consumed/evicted. Returned by QRProvider.Poll and
+	// ResolveExchangeCode.
+	ErrTicketNotFound = errors.New("sso: ticket not found or expired")
+
+	// ErrTicketExpired means the ticket exists but its TTL has elapsed.
+	// Distinct from ErrTicketNotFound so callers can differentiate
+	// "re-issue" vs "unknown ticket" UX if needed.
+	ErrTicketExpired = errors.New("sso: ticket expired")
+
+	// ErrTicketConflict means the ticket is in a state that disallows the
+	// requested transition (e.g. ResolveExchangeCode on an already-confirmed
+	// ticket). Equivalent to identity.ErrQRCodeConflict.
+	ErrTicketConflict = errors.New("sso: ticket state conflict")
+
+	// ErrTicketAlreadyScanned means a different user already scanned the
+	// ticket. Equivalent to identity.ErrQRCodeScanned.
+	ErrTicketAlreadyScanned = errors.New("sso: ticket already scanned by another user")
+
+	// ErrStateNotFound means the OAuth state presented at the callback was
+	// never issued (or has been consumed). Used by redirect-flow helpers.
+	ErrStateNotFound = errors.New("sso: oauth state not found or expired")
+
+	// ErrExchangeFailed means the third-party code exchange (OAuth code →
+	// access token, or wx.login code → session) failed at the protocol
+	// level (rejected code, bad signature, ...). Wrap with %w to attach
+	// provider-side detail.
+	ErrExchangeFailed = errors.New("sso: code exchange failed")
+
+	// ErrProviderUnavailable means the third-party IdP returned an
+	// unexpected HTTP status or the network call failed. Use this for
+	// 5xx, timeouts, and decode failures — not for business-level
+	// rejections (those use ErrExchangeFailed).
+	ErrProviderUnavailable = errors.New("sso: provider unavailable")
 )
 
 // Flow declares which login protocol a Provider implements.
