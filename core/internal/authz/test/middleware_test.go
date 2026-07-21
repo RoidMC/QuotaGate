@@ -32,7 +32,7 @@ func setupMiddlewareTestManager(t *testing.T) *authz.AuthzManager {
 }
 
 func withRole(r *http.Request, role string) *http.Request {
-	ctx := middleware.WithUserRole(r.Context(), role)
+	ctx := middleware.WithUserRoles(r.Context(), []string{role})
 	// The middleware resolves roles via g(userID, role, domain); set userID
 	// equal to the role so that identity-based grouping lets the request pass.
 	ctx = middleware.WithUserID(ctx, role)

@@ -1,6 +1,6 @@
 // QuotaGate-only model: billing wallet and balance (not shared with KexCore IAM)
 
-package model
+package billingmodel
 
 import "time"
 

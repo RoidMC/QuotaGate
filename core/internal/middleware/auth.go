@@ -43,11 +43,10 @@ func BearerAuth(issuer *service.TokenIssuer) func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := WithUserID(r.Context(), claims.UserID)
-			ctx = WithUserRole(ctx, claims.Role)
-			ctx = WithUserRoles(ctx, claims.Roles)
-			ctx = tenant.WithTenant(ctx, claims.TenantID)
-			next.ServeHTTP(w, r.WithContext(ctx))
+		ctx := WithUserID(r.Context(), claims.UserID)
+		ctx = WithUserRoles(ctx, claims.Roles)
+		ctx = tenant.WithTenant(ctx, claims.TenantID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }

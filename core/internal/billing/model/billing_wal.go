@@ -1,6 +1,6 @@
 // QuotaGate-only model: billing WAL (not shared with KexCore IAM)
 
-package model
+package billingmodel
 
 import "time"
 

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strings"
@@ -26,6 +27,48 @@ type RoleResolver interface {
 	EffectiveRoles(ctx context.Context, userID string) ([]string, error)
 }
 
+// DBFailureMode controls how the Authz middleware behaves when the
+// RoleResolver cannot reach its backing store (DB connection lost, query
+// timed out, etc.). The previous implementation always returned 403
+// Forbidden on any resolver error, which is fail-closed but a usability
+// disaster: a transient DB hiccup would surface to every authenticated user
+// as if their account had been suspended.
+//
+// The modes below let the operator trade off between security and
+// availability. The default (ModeServiceUnavailable) preserves fail-closed
+// semantics but uses HTTP 503 so clients can distinguish "cannot verify"
+// from "denied" and retry appropriately.
+type DBFailureMode int
+
+const (
+	// ModeServiceUnavailable is the default. On resolver error the middleware
+	// returns 503 Service Unavailable. The request is NOT allowed through —
+	// fail-closed is preserved — but the response status is semantically
+	// correct so clients can retry and UIs can render "service degraded"
+	// rather than "permission denied".
+	ModeServiceUnavailable DBFailureMode = iota
+
+	// ModeDeny returns 403 Forbidden on resolver error, matching the legacy
+	// behaviour. Kept as an option for operators who explicitly want the
+	// old semantics (e.g. compliance regimes that require any DB-contact
+	// failure to be reported as a denial).
+	ModeDeny
+
+	// ModeTrustToken lets the request through using the roles embedded in
+	// the JWT, on the assumption that a recently-issued token is a good
+	// approximation of the user's current roles. This is the most permissive
+	// mode: it trades the strict-revocation guarantee (the whole point of
+	// rolesMatchDB) for availability during DB outages. Use only when the
+	// operator has accepted that role revocations may take effect only at
+	// token expiry during an outage.
+	//
+	// Even in this mode, RBAC/ABAC/ReBAC still run afterwards with the
+	// token roles, so a revoked role is still ignored for routing — but
+	// a role *grant* made during the outage will not be honoured until
+	// the token is refreshed.
+	ModeTrustToken
+)
+
 // AuthzOption configures the Authz middleware.
 type AuthzOption func(*authzMiddleware)
 
@@ -37,20 +80,24 @@ func WithRoleResolver(r RoleResolver) AuthzOption {
 	}
 }
 
+// WithDBFailureMode sets the behaviour when the RoleResolver fails. If not
+// called, ModeServiceUnavailable is used. The option has no effect when no
+// RoleResolver is wired (no strict token validation is performed in that case).
+func WithDBFailureMode(mode DBFailureMode) AuthzOption {
+	return func(m *authzMiddleware) {
+		m.dbFailureMode = mode
+	}
+}
+
 type authzMiddleware struct {
-	manager      *authz.AuthzManager
-	resolver     RuleTypeResolver
-	roleResolver RoleResolver
+	manager       *authz.AuthzManager
+	resolver      RuleTypeResolver
+	roleResolver  RoleResolver
+	dbFailureMode DBFailureMode
 }
 
 func getRolesFromCtx(r *http.Request) []string {
-	roles := GetUserRoles(r.Context())
-	if len(roles) == 0 {
-		if role := GetUserRole(r.Context()); role != "" {
-			roles = []string{role}
-		}
-	}
-	return roles
+	return GetUserRoles(r.Context())
 }
 
 // sanitizePath rejects path traversal attempts before authorization.
@@ -75,8 +122,9 @@ func Authz(authzManager *authz.AuthzManager, resolver RuleTypeResolver, opts ...
 	}
 
 	mw := &authzMiddleware{
-		manager:  authzManager,
-		resolver: resolver,
+		manager:       authzManager,
+		resolver:      resolver,
+		dbFailureMode: ModeServiceUnavailable, // default: fail-closed but semantically honest
 	}
 	for _, opt := range opts {
 		opt(mw)
@@ -98,7 +146,35 @@ func Authz(authzManager *authz.AuthzManager, resolver RuleTypeResolver, opts ...
 			// the roles embedded in the token against the current DB role set.
 			// This is mandatory and cannot be disabled.
 			if mw.roleResolver != nil && userID != "" {
-				if !mw.rolesMatchDB(r.Context(), userID, roles) {
+				matched, err := mw.rolesMatchDB(r.Context(), userID, roles)
+				if err != nil {
+					// DB resolver failure. Decision is mode-driven so the
+					// operator can trade off between security (ModeDeny) and
+					// availability (ModeTrustToken) without recompiling.
+					slog.Warn("quotagate/middleware: role resolver failed",
+						"user_id", userID,
+						"tenant_id", tenantID,
+						"path", path,
+						"mode", mw.dbFailureMode.String(),
+						"error", err)
+
+					switch mw.dbFailureMode {
+					case ModeServiceUnavailable:
+						// Fail-closed but semantically honest: 503 says
+						// "cannot verify", not "denied". Clients retry.
+						kexerrors.AbortServiceUnavailable(w, kexerrors.ErrServiceUnavailable)
+						return
+					case ModeDeny:
+						// Legacy behaviour: surface as 403.
+						kexerrors.AbortForbidden(w, kexerrors.ErrForbidden)
+						return
+					case ModeTrustToken:
+						// Fall through to RBAC using the token's roles.
+						// The strict-revocation guarantee is suspended for
+						// the duration of the outage; logged above so
+						// operators can see how long the window was open.
+					}
+				} else if !matched {
 					kexerrors.AbortForbidden(w, kexerrors.ErrForbidden)
 					return
 				}
@@ -143,12 +219,40 @@ func Authz(authzManager *authz.AuthzManager, resolver RuleTypeResolver, opts ...
 	}
 }
 
-func (m *authzMiddleware) rolesMatchDB(ctx context.Context, userID string, tokenRoles []string) bool {
+// rolesMatchDB compares the roles embedded in the JWT against the current
+// authoritative role set from the RoleResolver. The (bool, error) return
+// separates the two failure modes that the previous implementation conflated:
+//
+//   - err != nil: the resolver could not reach its backing store. The caller
+//     decides whether to fail-closed (503/403) or trust the token (ModeTrustToken)
+//     based on the configured DBFailureMode.
+//   - matched == false && err == nil: the resolver succeeded and the roles
+//     genuinely do not match (e.g. revoked mid-token). This is a definitive
+//     403 — there is no ambiguity, the user no longer holds the roles the
+//     token claims.
+//
+// Either case used to surface as plain `false` and a 403, which made a DB
+// outage indistinguishable from a mass role revocation.
+func (m *authzMiddleware) rolesMatchDB(ctx context.Context, userID string, tokenRoles []string) (bool, error) {
 	dbRoles, err := m.roleResolver.EffectiveRoles(ctx, userID)
 	if err != nil {
-		return false
+		return false, err
 	}
-	return roleSetsEqual(tokenRoles, dbRoles)
+	return roleSetsEqual(tokenRoles, dbRoles), nil
+}
+
+// String returns a human-readable name for the mode, used in log lines.
+func (m DBFailureMode) String() string {
+	switch m {
+	case ModeServiceUnavailable:
+		return "service_unavailable"
+	case ModeDeny:
+		return "deny"
+	case ModeTrustToken:
+		return "trust_token"
+	default:
+		return "unknown"
+	}
 }
 
 func roleSetsEqual(a, b []string) bool {

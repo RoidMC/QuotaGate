@@ -1,6 +1,6 @@
 // QuotaGate-only model: billing order (not shared with KexCore IAM)
 
-package model
+package billingmodel
 
 import "time"
 

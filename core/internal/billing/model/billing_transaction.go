@@ -1,6 +1,6 @@
 // QuotaGate-only model: billing transaction ledger (not shared with KexCore IAM)
 
-package model
+package billingmodel
 
 import "time"
 

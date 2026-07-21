@@ -1,6 +1,6 @@
 // QuotaGate-only model: billing subscription order (not shared with KexCore IAM)
 
-package model
+package billingmodel
 
 import "time"
 
@@ -9,9 +9,10 @@ import "time"
 // resulting UserSubscription. A completed order triggers CreateUserSubscriptionFromPlanTx.
 //
 // Lifecycle:
-//   pending -> success  (payment confirmed via webhook or balance pay)
-//   pending -> expired  (timeout without payment)
-//   pending -> failed   (payment gateway returned failure)
+//
+//	pending -> success  (payment confirmed via webhook or balance pay)
+//	pending -> expired  (timeout without payment)
+//	pending -> failed   (payment gateway returned failure)
 type SubscriptionOrder struct {
 	ID              string     `gorm:"primaryKey;size:36" json:"id"`
 	TenantID        string     `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
@@ -19,8 +20,8 @@ type SubscriptionOrder struct {
 	PlanID          string     `gorm:"column:plan_id;size:36;index;not null" json:"plan_id"`
 	Amount          int64      `gorm:"not null;default:0" json:"amount"` // smallest currency unit
 	Currency        string     `gorm:"size:8;not null;default:'CNY'" json:"currency"`
-	TradeNo         string     `gorm:"column:trade_no;size:128;uniqueIndex;not null" json:"trade_no"` // idempotent trade number shared with payment gateway
-	PaymentMethod   string     `gorm:"column:payment_method;size:32" json:"payment_method"`           // balance / stripe / creem / epay / waffo
+	TradeNo         string     `gorm:"column:trade_no;size:128;uniqueIndex;not null" json:"trade_no"`      // idempotent trade number shared with payment gateway
+	PaymentMethod   string     `gorm:"column:payment_method;size:32" json:"payment_method"`                // balance / stripe / creem / epay / waffo
 	PaymentProvider string     `gorm:"column:payment_provider;size:32;default:''" json:"payment_provider"` // raw provider key for cross-gateway callback verification
 	Status          string     `gorm:"size:16;not null;default:'pending';index" json:"status"`
 	ProviderPayload string     `gorm:"column:provider_payload;type:text" json:"provider_payload"` // raw provider callback payload for audit

@@ -1,6 +1,6 @@
 // QuotaGate-only model: per-model quota within a subscription (not shared with KexCore IAM)
 
-package model
+package billingmodel
 
 import "time"
 
