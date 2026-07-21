@@ -3,7 +3,8 @@ package sso
 import (
 	"fmt"
 	"sort"
-	"sync"
+
+	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
 )
 
 // Method is a provider's public descriptor, surfaced via the registry's
@@ -24,32 +25,23 @@ type Method struct {
 	Flow string `json:"flow"`
 }
 
-// Registry holds all compiled-in ProviderFactories, indexed by name.
-// Factories self-register in init(); the registry is built once at boot.
-// Per-request provider instances are created via New(cfg), not stored here,
-// because credentials live in the per-tenant ProviderConfig (from DB).
+// Registry holds all compiled-in ProviderFactories, indexed by name. The
+// concurrent, duplicate-rejecting machinery lives in the shared
+// kexpluginsdk.Registry; this type adds the SSO-specific New(cfg) and
+// Methods().
 type Registry struct {
-	mu        sync.RWMutex
-	factories map[string]ProviderFactory
+	*kexpluginsdk.Registry[ProviderFactory]
 }
 
 func NewRegistry() *Registry {
-	return &Registry{
-		factories: make(map[string]ProviderFactory),
-	}
+	return &Registry{Registry: kexpluginsdk.NewRegistry[ProviderFactory]()}
 }
 
-// RegisterFactory registers a ProviderFactory. Called from init() in each
-// provider package. Panics on duplicate name to surface wiring mistakes at
-// boot.
-func (r *Registry) RegisterFactory(f ProviderFactory) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	name := f.Name()
-	if _, dup := r.factories[name]; dup {
-		panic(fmt.Sprintf("sso: duplicate provider factory %q", name))
-	}
-	r.factories[name] = f
+// Register registers a ProviderFactory. Called from init() in each provider
+// package. Panics on duplicate name (the panic is raised inside
+// kexpluginsdk.Register) to surface wiring mistakes at boot.
+func (r *Registry) Register(f ProviderFactory) {
+	r.Registry.Register(f)
 }
 
 // New instantiates a provider for a single request using per-tenant config.
@@ -64,9 +56,7 @@ func (r *Registry) New(cfg ProviderConfig) (Provider, error) {
 	if cfg.TenantID == "" {
 		return nil, fmt.Errorf("sso: ProviderConfig.TenantID is empty")
 	}
-	r.mu.RLock()
-	f, ok := r.factories[cfg.Name]
-	r.mu.RUnlock()
+	f, ok := r.Get(cfg.Name)
 	if !ok {
 		return nil, fmt.Errorf("sso: unknown provider %q", cfg.Name)
 	}
@@ -75,21 +65,15 @@ func (r *Registry) New(cfg ProviderConfig) (Provider, error) {
 
 // Has reports whether a provider name is compiled in.
 func (r *Registry) Has(name string) bool {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	_, ok := r.factories[name]
-	return ok
+	return r.Registry.Has(name)
 }
 
 // Methods returns all compiled-in providers, sorted by name, for /auth/methods.
 // This is the union of all providers the binary can serve; the front-end
 // should intersect it with the tenant's enabled-provider list from the DB.
 func (r *Registry) Methods() []Method {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	out := make([]Method, 0, len(r.factories))
-	for name, f := range r.factories {
+	out := make([]Method, 0, r.Len())
+	r.Range(func(name string, f ProviderFactory) bool {
 		flow := "redirect"
 		if f.Flow() == FlowQR {
 			flow = "qr"
@@ -98,7 +82,8 @@ func (r *Registry) Methods() []Method {
 			Name: name,
 			Flow: flow,
 		})
-	}
+		return true
+	})
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
 }

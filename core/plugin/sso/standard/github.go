@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -17,7 +18,7 @@ import (
 )
 
 func init() {
-	sso.DefaultRegistry().RegisterFactory(githubFactory{})
+	sso.DefaultRegistry().Register(githubFactory{})
 }
 
 // githubFactory is a stateless ProviderFactory for GitHub OAuth. Credentials
@@ -67,7 +68,8 @@ func (githubFactory) New(cfg sso.ProviderConfig) (sso.Provider, error) {
 			TokenURL: tokenURL,
 		},
 	}
-	return &githubProvider{config: ocfg, client: http.DefaultClient, apiBase: apiBase}, nil
+	hc := &http.Client{Timeout: 10 * time.Second}
+	return &githubProvider{config: ocfg, client: hc, apiBase: apiBase}, nil
 }
 
 // githubAPIBase is the default GitHub REST API root. Overridable via the
@@ -136,18 +138,18 @@ func (p *githubProvider) CompleteAuth(ctx context.Context, code string) (*sso.As
 		EmailVerified: emailVerified,
 		AvatarURL:     ghUser.AvatarURL,
 		Raw: map[string]any{
-			"login":       ghUser.Login,
-			"id":          ghUser.ID,
-			"node_id":     ghUser.NodeID,
-			"html_url":    ghUser.HTMLURL,
-			"company":     ghUser.Company,
-			"location":    ghUser.Location,
-			"bio":         ghUser.Bio,
+			"login":        ghUser.Login,
+			"id":           ghUser.ID,
+			"node_id":      ghUser.NodeID,
+			"html_url":     ghUser.HTMLURL,
+			"company":      ghUser.Company,
+			"location":     ghUser.Location,
+			"bio":          ghUser.Bio,
 			"public_repos": ghUser.PublicRepos,
-			"followers":   ghUser.Followers,
-			"following":   ghUser.Following,
-			"created_at":  ghUser.CreatedAt,
-			"updated_at":  ghUser.UpdatedAt,
+			"followers":    ghUser.Followers,
+			"following":    ghUser.Following,
+			"created_at":   ghUser.CreatedAt,
+			"updated_at":   ghUser.UpdatedAt,
 		},
 	}, nil
 }
@@ -174,9 +176,9 @@ type githubUser struct {
 
 // githubEmail is one entry from GET /user/emails.
 type githubEmail struct {
-	Email     string `json:"email"`
-	Primary   bool   `json:"primary"`
-	Verified  bool   `json:"verified"`
+	Email      string `json:"email"`
+	Primary    bool   `json:"primary"`
+	Verified   bool   `json:"verified"`
 	Visibility string `json:"visibility"`
 }
 

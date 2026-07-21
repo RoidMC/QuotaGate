@@ -285,8 +285,8 @@ func (m *qrInstance) sessionToAssertion(s *weChatMiniProgramSession) *sso.Assert
 // each closure-capturing the given store so tests get full isolation.
 func NewRegistry(store kexswiftdb.Store) *sso.Registry {
 	reg := sso.NewRegistry()
-	reg.RegisterFactory(redirectMockFactory{store: store})
-	reg.RegisterFactory(qrMockFactory{store: store})
+	reg.Register(redirectMockFactory{store: store})
+	reg.Register(qrMockFactory{store: store})
 	return reg
 }
 
