@@ -15,6 +15,9 @@ import (
 const (
 	// TurnstileKey is the registry/provider name for Cloudflare Turnstile.
 	TurnstileKey = "turnstile"
+	// turnstileVersion is the implementation version, shared by the provider
+	// instance and the factory so they can never drift apart.
+	turnstileVersion = "1.0.0"
 	// turnstileSiteverify is Cloudflare's token-verification endpoint.
 	turnstileSiteverify = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 )
@@ -42,7 +45,7 @@ var _ captcha.Verifier = (*TurnstileProvider)(nil)
 var _ captcha.PublicConfigProvider = (*TurnstileProvider)(nil)
 
 func (p *TurnstileProvider) Name() string    { return TurnstileKey }
-func (p *TurnstileProvider) Version() string { return "1.0.0" }
+func (p *TurnstileProvider) Version() string { return turnstileVersion }
 func (p *TurnstileProvider) Type() string    { return TurnstileKey }
 
 // Verify sends the frontend-supplied token to Cloudflare's siteverify endpoint
@@ -106,17 +109,22 @@ func postSiteverify(ctx context.Context, client *http.Client, endpoint, secret, 
 type TurnstileFactory struct{}
 
 func (f *TurnstileFactory) Name() string    { return TurnstileKey }
-func (f *TurnstileFactory) Version() string { return "1.0.0" }
+func (f *TurnstileFactory) Version() string { return turnstileVersion }
 func (f *TurnstileFactory) Type() string    { return TurnstileKey }
 
+// Capabilities declares the capability interfaces TurnstileProvider satisfies,
+// so Validate can confirm at boot that the produced instance actually
+// implements them.
+func (f *TurnstileFactory) Capabilities() []string {
+	return []string{captcha.CapVerifier, captcha.CapPublicConfig}
+}
+
 // New builds a TurnstileProvider from per-tenant config. The secret (private
-// key) is required; the sitekey (public) is carried for parity but not used
-// server-side.
+// key) is required at Verify time; we do not reject an empty config here so
+// Validate can probe the factory with a zero-config instance at boot. The
+// sitekey (public) is carried for parity but not used server-side.
 func (f *TurnstileFactory) New(cfg captcha.ProviderConfig) (captcha.Provider, error) {
 	secret := cfg.Extra["secret"]
-	if secret == "" {
-		return nil, fmt.Errorf("captcha/turnstile: missing secret in provider config for tenant %q", cfg.TenantID)
-	}
 	return &TurnstileProvider{
 		secret:  secret,
 		sitekey: cfg.Extra["sitekey"],

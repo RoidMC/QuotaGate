@@ -10,6 +10,7 @@ package captcha
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sort"
 
 	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
@@ -48,6 +49,27 @@ type PublicConfigProvider interface {
 	PublicConfig() map[string]string
 }
 
+// Capability names declared by captcha factories via Factory.Capabilities().
+// They mirror the optional provider interfaces above so Validate can confirm at
+// boot that a factory's produced instance actually implements what it claims.
+const (
+	// CapVerifier is declared by providers that verify a frontend-supplied
+	// challenge token (turnstile, recaptcha, geetest, ...).
+	CapVerifier = "verifier"
+	// CapPublicConfig is declared by providers whose widget needs a public
+	// key/config (sitekey, captcha_id, ...) delivered to the browser before the
+	// challenge can start.
+	CapPublicConfig = "public-config"
+)
+
+// capabilityIface maps a declared capability name to the Go interface the
+// produced Provider must satisfy. Validate uses it to catch mis-wired plugins
+// at boot instead of at request time.
+var capabilityIface = map[string]reflect.Type{
+	CapVerifier:     reflect.TypeOf((*Verifier)(nil)).Elem(),
+	CapPublicConfig: reflect.TypeOf((*PublicConfigProvider)(nil)).Elem(),
+}
+
 // ProviderConfig is the runtime, per-(tenant, provider) configuration loaded
 // from the database.
 type ProviderConfig struct {
@@ -71,6 +93,10 @@ type Factory interface {
 	Type() string
 	// Version is the provider implementation version.
 	Version() string
+	// Capabilities reports the capability names (CapVerifier, CapPublicConfig,
+	// ...) the produced Provider satisfies. Validate uses it to confirm at boot
+	// that the instance actually implements the claimed interfaces.
+	Capabilities() []string
 	// New returns a Provider configured with the given per-tenant config.
 	New(cfg ProviderConfig) (Provider, error)
 }
@@ -106,4 +132,32 @@ func (r *Registry) Methods() []Method {
 	})
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
 	return out
+}
+
+// Validate probes every registered factory: it builds a zero-config instance
+// and asserts that the instance actually satisfies each capability the factory
+// declares (and only known capabilities). It returns a list of human-readable
+// problems; an empty slice means the registry is correctly wired. Callers
+// (e.g. the plugin aggregator's init) should panic if this returns anything.
+func (r *Registry) Validate() []string {
+	var problems []string
+	r.Range(func(name string, f Factory) bool {
+		inst, err := f.New(ProviderConfig{Name: name})
+		if err != nil {
+			problems = append(problems, fmt.Sprintf("factory %q: New(zero cfg) failed: %v", name, err))
+			return true
+		}
+		for _, cap := range f.Capabilities() {
+			iface, ok := capabilityIface[cap]
+			if !ok {
+				problems = append(problems, fmt.Sprintf("factory %q: declares unknown capability %q", name, cap))
+				continue
+			}
+			if !reflect.TypeOf(inst).Implements(iface) {
+				problems = append(problems, fmt.Sprintf("factory %q: declares %q but produced Provider does not implement it", name, cap))
+			}
+		}
+		return true
+	})
+	return problems
 }

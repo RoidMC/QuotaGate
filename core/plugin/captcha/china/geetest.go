@@ -17,13 +17,20 @@ import (
 )
 
 const (
-	// GeetestKey is the registry/provider name for GeeTest (极验).
+	// GeetestKey is the registry/provider name for GeeTest (极验). It is also the
+	// provider Type, since this package ships exactly one GeeTest implementation.
 	GeetestKey = "geetest"
+	// geetestVersion is the implementation version, shared by both the provider
+	// instance and the factory so they can never drift apart.
+	geetestVersion = "1.0.0"
 	// geetestV4Host is GeeTest's v4 validate host. v3 (api.geetest.com) is legacy;
 	// modern credentials are v4, which uses HMAC-signed validation and is loaded
 	// entirely by the frontend SDK (no server-side register call).
 	geetestV4Host = "https://gcaptcha4.geetest.com"
-	geetestSDK    = "quotagate-golang:v1.0.0"
+	// geetestSDK is the SDK identifier sent to GeeTest's /validate endpoint so the
+	// upstream can attribute the call. Derived from geetestVersion to keep a single
+	// source of truth for the version number (no duplicated "1.0.0").
+	geetestSDK = "quotagate-golang:v" + geetestVersion
 )
 
 // GeetestProvider verifies GeeTest (极验) v4 behavior captchas. It is a
@@ -47,7 +54,7 @@ var _ captcha.Verifier = (*GeetestProvider)(nil)
 var _ captcha.PublicConfigProvider = (*GeetestProvider)(nil)
 
 func (p *GeetestProvider) Name() string    { return GeetestKey }
-func (p *GeetestProvider) Version() string { return "1.0.0" }
+func (p *GeetestProvider) Version() string { return geetestVersion }
 func (p *GeetestProvider) Type() string    { return GeetestKey }
 
 func (p *GeetestProvider) hostOrDefault() string {
@@ -162,17 +169,23 @@ func hmacHex(key, msg string) string {
 type GeetestFactory struct{}
 
 func (f *GeetestFactory) Name() string    { return GeetestKey }
-func (f *GeetestFactory) Version() string { return "1.0.0" }
+func (f *GeetestFactory) Version() string { return geetestVersion }
 func (f *GeetestFactory) Type() string    { return GeetestKey }
 
-// New builds a GeetestProvider from per-tenant config. Both captcha_id (the
-// public "验证ID") and private_key (the "Key") are required.
+// Capabilities declares the capability interfaces GeetestProvider satisfies, so
+// Validate can confirm at boot that the produced instance actually implements
+// them.
+func (f *GeetestFactory) Capabilities() []string {
+	return []string{captcha.CapVerifier, captcha.CapPublicConfig}
+}
+
+// New builds a GeetestProvider from per-tenant config. captcha_id (the public
+// "验证ID") and private_key (the "Key") are required at Verify time; we do not
+// reject an empty config here so Validate can probe the factory with a
+// zero-config instance at boot.
 func (f *GeetestFactory) New(cfg captcha.ProviderConfig) (captcha.Provider, error) {
 	id := cfg.Extra["captcha_id"]
 	key := cfg.Extra["private_key"]
-	if id == "" || key == "" {
-		return nil, fmt.Errorf("captcha/geetest: missing captcha_id/private_key for tenant %q", cfg.TenantID)
-	}
 	return &GeetestProvider{
 		captchaID:  id,
 		privateKey: key,
