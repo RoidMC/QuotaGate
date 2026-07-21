@@ -258,6 +258,47 @@ func (s *BadgerStore) CompareAndSwap(ctx context.Context, prefix Prefix, key str
 	return swapped, nil
 }
 
+func (s *BadgerStore) CompareAndDelete(ctx context.Context, prefix Prefix, key string, expected []byte) (bool, error) {
+	if s.closed.Load() {
+		return false, ErrStoreClosed
+	}
+
+	k := buildKey(prefix, key)
+	var deleted bool
+
+	err := s.update(func(txn *badger.Txn) error {
+		item, err := txn.Get([]byte(k))
+		if err != nil {
+			if err == badger.ErrKeyNotFound {
+				deleted = false
+				return nil
+			}
+			return err
+		}
+
+		current, err := item.ValueCopy(nil)
+		if err != nil {
+			return err
+		}
+
+		if !bytesEqual(current, expected) {
+			deleted = false
+			return nil
+		}
+
+		if err := txn.Delete([]byte(k)); err != nil {
+			return err
+		}
+		deleted = true
+		return nil
+	})
+
+	if err != nil {
+		return false, err
+	}
+	return deleted, nil
+}
+
 func (s *BadgerStore) Keys(ctx context.Context, prefix Prefix, keyPrefix string) ([]string, error) {
 	if s.closed.Load() {
 		return nil, ErrStoreClosed

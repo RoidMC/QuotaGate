@@ -17,6 +17,7 @@ const (
 	PrefixAuth      Prefix = "auth"
 	PrefixBilling   Prefix = "billing"
 	PrefixSession   Prefix = "session"
+	PrefixQRCode    Prefix = "qrcode"
 	PrefixRateLimit Prefix = "ratelimit"
 	PrefixWebhook   Prefix = "webhook"
 	PrefixAudit     Prefix = "audit"
@@ -35,6 +36,7 @@ type Store interface {
 	Exists(ctx context.Context, prefix Prefix, key string) (bool, error)
 	SetNX(ctx context.Context, prefix Prefix, key string, value []byte, ttl time.Duration) (bool, error)
 	CompareAndSwap(ctx context.Context, prefix Prefix, key string, oldValue, newValue []byte, ttl time.Duration) (bool, error)
+	CompareAndDelete(ctx context.Context, prefix Prefix, key string, expected []byte) (bool, error)
 	Increment(ctx context.Context, prefix Prefix, key string, ttl time.Duration) (int64, error)
 	Keys(ctx context.Context, prefix Prefix, keyPrefix string) ([]string, error)
 	DeleteByPrefix(ctx context.Context, prefix Prefix, keyPrefix string) (int, error)

@@ -145,6 +145,50 @@ func (s *RedisStore) CompareAndSwap(ctx context.Context, prefix Prefix, key stri
 	return false, ErrCASConflict
 }
 
+func (s *RedisStore) CompareAndDelete(ctx context.Context, prefix Prefix, key string, expected []byte) (bool, error) {
+	if s.closed.Load() {
+		return false, ErrStoreClosed
+	}
+	k := buildKey(prefix, key)
+
+	for i := 0; i < maxRetries; i++ {
+		var deleted bool
+
+		err := s.client.Watch(ctx, func(tx *redis.Tx) error {
+			current, err := tx.Get(ctx, k).Bytes()
+			if err != nil {
+				if err == redis.Nil {
+					deleted = false
+					return nil
+				}
+				return err
+			}
+
+			if !bytesEqual(current, expected) {
+				deleted = false
+				return nil
+			}
+
+			deleted = true
+			_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+				pipe.Del(ctx, k)
+				return nil
+			})
+			return err
+		}, k)
+
+		if err == nil {
+			return deleted, nil
+		}
+		if err == redis.TxFailedErr {
+			continue
+		}
+		return false, err
+	}
+
+	return false, ErrCASConflict
+}
+
 func (s *RedisStore) Keys(ctx context.Context, prefix Prefix, keyPrefix string) ([]string, error) {
 	if s.closed.Load() {
 		return nil, ErrStoreClosed
@@ -217,16 +261,22 @@ func (s *RedisStore) Stats(ctx context.Context) []StoreStats {
 		return nil
 	}
 
-	keys, err := s.client.Keys(ctx, "*").Result()
-	if err != nil {
-		return nil
-	}
-
+	var cursor uint64
 	nsCounts := make(map[string]int)
-	for _, k := range keys {
-		ns := extractPrefix(k)
-		if ns != "" {
-			nsCounts[ns]++
+	for {
+		batch, next, err := s.client.Scan(ctx, cursor, "*", 1000).Result()
+		if err != nil {
+			return nil
+		}
+		for _, k := range batch {
+			ns := extractPrefix(k)
+			if ns != "" {
+				nsCounts[ns]++
+			}
+		}
+		cursor = next
+		if cursor == 0 {
+			break
 		}
 	}
 

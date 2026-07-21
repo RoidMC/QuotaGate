@@ -9,6 +9,7 @@ const (
 	CodeMethodNotAllowed      = "METHOD_NOT_ALLOWED"
 	CodeConflict              = "CONFLICT"
 	CodeInternalError         = "INTERNAL_ERROR"
+	CodeServiceUnavailable    = "SERVICE_UNAVAILABLE"
 	CodeURITooLong            = "URI_TOO_LONG"
 	CodeBodyTooLarge          = "BODY_TOO_LARGE"
 	CodeInvalidEmail          = "INVALID_EMAIL"
@@ -59,6 +60,16 @@ var (
 	ErrInternalError = &ErrorResponse{
 		Code:    CodeInternalError,
 		Message: "internal server error",
+	}
+
+	// ErrServiceUnavailable indicates the server cannot fulfil the request
+	// because an internal dependency (typically the role database) is
+	// temporarily unavailable. Distinct from ErrForbidden: a 503 means
+	// "I cannot verify your permissions", NOT "you don't have permission".
+	// Clients are expected to retry rather than treat it as account suspension.
+	ErrServiceUnavailable = &ErrorResponse{
+		Code:    CodeServiceUnavailable,
+		Message: "service temporarily unavailable",
 	}
 )
 

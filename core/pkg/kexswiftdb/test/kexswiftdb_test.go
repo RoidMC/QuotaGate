@@ -374,3 +374,103 @@ func TestBadgerStore_DeleteByPrefix_NoMatch(t *testing.T) {
 		t.Fatalf("DeleteByPrefix: got %d, want 0", count)
 	}
 }
+
+func TestBadgerStore_CompareAndDelete(t *testing.T) {
+	s := newTestStore(t)
+	defer s.Close()
+	ctx := context.Background()
+
+	// Not present -> false, no error.
+	deleted, err := s.CompareAndDelete(ctx, "qrcode", "missing", []byte("x"))
+	if err != nil {
+		t.Fatalf("CompareAndDelete on missing: %v", err)
+	}
+	if deleted {
+		t.Fatal("CompareAndDelete on missing: got true, want false")
+	}
+
+	if err := s.Set(ctx, "qrcode", "k", []byte("v1"), 0); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+
+	// Wrong expected -> false, key untouched.
+	deleted, err = s.CompareAndDelete(ctx, "qrcode", "k", []byte("wrong"))
+	if err != nil {
+		t.Fatalf("CompareAndDelete wrong expected: %v", err)
+	}
+	if deleted {
+		t.Fatal("CompareAndDelete wrong expected: got true, want false")
+	}
+	val, err := s.Get(ctx, "qrcode", "k")
+	if err != nil || string(val) != "v1" {
+		t.Fatalf("key should survive wrong-expected delete: val=%q err=%v", string(val), err)
+	}
+
+	// Correct expected -> true, key gone.
+	deleted, err = s.CompareAndDelete(ctx, "qrcode", "k", []byte("v1"))
+	if err != nil {
+		t.Fatalf("CompareAndDelete correct expected: %v", err)
+	}
+	if !deleted {
+		t.Fatal("CompareAndDelete correct expected: got false, want true")
+	}
+	if _, err := s.Get(ctx, "qrcode", "k"); err != kexswiftdb.ErrKeyNotFound {
+		t.Fatalf("key should be gone after correct delete: err=%v", err)
+	}
+}
+
+func TestBadgerStore_ConsumeJSON(t *testing.T) {
+	s := newTestStore(t)
+	defer s.Close()
+	ctx := context.Background()
+
+	type entry struct {
+		ID string `json:"id"`
+	}
+	mustSet := func(id string) {
+		if err := kexswiftdb.SetJSON(ctx, s, "qrcode", id, entry{ID: id}, 0); err != nil {
+			t.Fatalf("SetJSON: %v", err)
+		}
+	}
+
+	// Absent -> (nil, nil).
+	got, err := kexswiftdb.ConsumeJSON[entry](ctx, s, "qrcode", "absent", func(c *entry) (bool, error) {
+		return true, nil
+	})
+	if err != nil || got != nil {
+		t.Fatalf("ConsumeJSON absent: got=%v err=%v, want nil,nil", got, err)
+	}
+
+	mustSet("a")
+
+	// First consume returns the value and removes the key.
+	got, err = kexswiftdb.ConsumeJSON[entry](ctx, s, "qrcode", "a", func(c *entry) (bool, error) {
+		return true, nil
+	})
+	if err != nil || got == nil || got.ID != "a" {
+		t.Fatalf("ConsumeJSON first: got=%v err=%v", got, err)
+	}
+	if _, err := s.Get(ctx, "qrcode", "a"); err != kexswiftdb.ErrKeyNotFound {
+		t.Fatalf("key should be gone after consume: err=%v", err)
+	}
+
+	// Second consume misses.
+	got, err = kexswiftdb.ConsumeJSON[entry](ctx, s, "qrcode", "a", func(c *entry) (bool, error) {
+		return true, nil
+	})
+	if err != nil || got != nil {
+		t.Fatalf("ConsumeJSON second: got=%v err=%v, want nil,nil", got, err)
+	}
+
+	// Declined -> key survives.
+	mustSet("b")
+	got, err = kexswiftdb.ConsumeJSON[entry](ctx, s, "qrcode", "b", func(c *entry) (bool, error) {
+		return false, nil
+	})
+	if err != nil || got != nil {
+		t.Fatalf("ConsumeJSON declined: got=%v err=%v, want nil,nil", got, err)
+	}
+	if _, err := s.Get(ctx, "qrcode", "b"); err != nil {
+		t.Fatalf("declined key should survive: err=%v", err)
+	}
+}

@@ -35,3 +35,10 @@ func AbortConflict(w http.ResponseWriter, err *ErrorResponse) {
 func AbortInternalError(w http.ResponseWriter, err *ErrorResponse) {
 	Abort(w, http.StatusInternalServerError, err)
 }
+
+// AbortServiceUnavailable writes a 503 with the given error. Used when an
+// internal dependency (e.g. the role database) fails and the server cannot
+// safely decide whether to allow or deny the request.
+func AbortServiceUnavailable(w http.ResponseWriter, err *ErrorResponse) {
+	Abort(w, http.StatusServiceUnavailable, err)
+}
