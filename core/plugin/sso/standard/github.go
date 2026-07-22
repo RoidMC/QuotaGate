@@ -14,6 +14,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
 	"github.com/roidmc/quotagate/plugin/sso"
 )
 
@@ -68,8 +69,7 @@ func (githubFactory) New(cfg sso.ProviderConfig) (sso.Provider, error) {
 			TokenURL: tokenURL,
 		},
 	}
-	hc := &http.Client{Timeout: 10 * time.Second}
-	return &githubProvider{config: ocfg, client: hc, apiBase: apiBase}, nil
+	return &githubProvider{config: ocfg, apiBase: apiBase}, nil
 }
 
 // githubAPIBase is the default GitHub REST API root. Overridable via the
@@ -78,21 +78,20 @@ const githubAPIBase = "https://api.github.com"
 
 type githubProvider struct {
 	config  *oauth2.Config
-	client  *http.Client
 	apiBase string // root for /user and /user/emails; default githubAPIBase
 }
 
 func (p *githubProvider) Name() string   { return "github" }
 func (p *githubProvider) Flow() sso.Flow { return sso.FlowRedirect }
 
-func (p *githubProvider) BeginAuth(ctx context.Context, state string) (string, error) {
+func (p *githubProvider) BeginAuth(ctx context.Context, state, _ string) (string, error) {
 	// AccessTypeOnline avoids GitHub issuing a refresh token we don't need
 	// for login. The URL also carries state for CSRF; the caller persists it
 	// and verifies it on callback.
 	return p.config.AuthCodeURL(state, oauth2.AccessTypeOnline), nil
 }
 
-func (p *githubProvider) CompleteAuth(ctx context.Context, code string) (*sso.Assertion, error) {
+func (p *githubProvider) CompleteAuth(ctx context.Context, code, _ string) (*sso.Assertion, error) {
 	// 1. code → access_token. oauth2.Exchange sets Accept: application/json
 	//    automatically via the GitHub endpoint.
 	token, err := p.config.Exchange(ctx, code)
@@ -182,8 +181,24 @@ type githubEmail struct {
 	Visibility string `json:"visibility"`
 }
 
+// httpClient builds an *http.Client that injects the OAuth2 bearer token via
+// oauth2.Transport and reuses the kexpluginsdk process-shared connection pool.
+// It carries a 10s global Timeout so a hung GitHub API call can't block a login
+// forever — this matches the rest of the Universal Plugin System (e.g. OIDC's
+// kexpluginsdk.SharedHTTPClient), which previously had a 10s deadline that the
+// old bare oauth2.NewClient path silently dropped.
+func (p *githubProvider) httpClient(_ context.Context, src oauth2.TokenSource) *http.Client {
+	return &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &oauth2.Transport{
+			Source: src,
+			Base:   kexpluginsdk.SharedTransport,
+		},
+	}
+}
+
 func (p *githubProvider) fetchGitHubUser(ctx context.Context, src oauth2.TokenSource) (*githubUser, error) {
-	client := oauth2.NewClient(ctx, src)
+	client := p.httpClient(ctx, src)
 	resp, err := client.Get(p.apiBase + "/user")
 	if err != nil {
 		return nil, fmt.Errorf("sso/github: fetch /user: %w: %v", sso.ErrProviderUnavailable, err)
@@ -206,7 +221,7 @@ func (p *githubProvider) fetchGitHubUser(ctx context.Context, src oauth2.TokenSo
 }
 
 func (p *githubProvider) fetchPrimaryEmail(ctx context.Context, src oauth2.TokenSource) (string, bool, error) {
-	client := oauth2.NewClient(ctx, src)
+	client := p.httpClient(ctx, src)
 	resp, err := client.Get(p.apiBase + "/user/emails")
 	if err != nil {
 		return "", false, fmt.Errorf("sso/github: fetch /user/emails: %w: %v", sso.ErrProviderUnavailable, err)
