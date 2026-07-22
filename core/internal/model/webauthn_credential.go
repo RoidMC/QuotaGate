@@ -8,13 +8,26 @@ import (
 var ErrCloneWarning = errors.New("quotagate/model: potential credential cloning detected (sign count has not increased)")
 
 type WebAuthnCredential struct {
-	ID              string     `gorm:"primaryKey;size:36" json:"id"`
-	TenantID        string     `gorm:"column:tenant_id;size:36;index;not null;default:''" json:"tenant_id"`
-	UserID          string     `gorm:"index;size:36;not null" json:"user_id"`
-	CredentialID    []byte     `gorm:"uniqueIndex;type:blob;not null" json:"-"`
-	PublicKey       []byte     `gorm:"type:blob;not null" json:"-"`
+	ID string `gorm:"primaryKey;size:36" json:"id"`
+	// TenantID is the leading column of BOTH composite indexes below — GORM merges
+	// tags with the same index name across fields, so we declare priority:1 here
+	// for each composite index and the trailing column on the partner field.
+	TenantID string `gorm:"column:tenant_id;size:36;not null;default:'';index:idx_webauthn_creds_tenant_user,priority:1;index:idx_webauthn_creds_tenant_cred,priority:1" json:"tenant_id"`
+	// idx_webauthn_creds_tenant_user serves the per-user lookups (ListByUserID,
+	// DeleteByUserID). Composite because every tenant-scoped query filters on both
+	// columns — the previous single-column indexes forced Postgres into bitmap-AND
+	// scans at non-trivial scale.
+	UserID string `gorm:"size:36;not null;index:idx_webauthn_creds_tenant_user,priority:2" json:"user_id"`
+	// idx_webauthn_creds_tenant_cred is the unique constraint. The previous
+	// global uniqueIndex broke multi-tenant deployments sharing one RPID: two
+	// tenants registering the same hardware key would collide on INSERT even
+	// though their (tenant_id, credential_id) pairs are distinct. Composite
+	// unique matches how FindByCredentialID actually queries — it always goes
+	// through the tenant callback, so tenant_id is part of the lookup key.
+	CredentialID    []byte     `gorm:"type:bytea;not null;uniqueIndex:idx_webauthn_creds_tenant_cred,priority:2" json:"-"`
+	PublicKey       []byte     `gorm:"type:bytea;not null" json:"-"`
 	AttestationType string     `gorm:"size:64;not null" json:"attestation_type"`
-	AAGUID          []byte     `gorm:"type:blob" json:"-"`
+	AAGUID          []byte     `gorm:"type:bytea" json:"-"`
 	SignCount       uint32     `gorm:"default:0;not null" json:"sign_count"`
 	Name            string     `gorm:"size:128" json:"name"`
 	Transports      string     `gorm:"size:255" json:"transports"`

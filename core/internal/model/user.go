@@ -5,17 +5,17 @@ import (
 )
 
 type User struct {
-	ID                 string `gorm:"primaryKey;size:36" json:"id"`
-	TenantID           string `gorm:"column:tenant_id;size:36;not null;default:''" json:"tenant_id"`
-	Email              string `gorm:"uniqueIndex;size:255" json:"email"`
-	EmailVerified      bool   `gorm:"column:email_verified;default:false;not null" json:"email_verified"`
-	Phone              string `gorm:"uniqueIndex:idx_users_phone,where:phone != '';size:20;default:''" json:"phone"`
-	PhoneVerified      bool   `gorm:"column:phone_verified;default:false;not null" json:"phone_verified"`
-	Username           string `gorm:"uniqueIndex;size:64;not null" json:"username"`
-	PasswordHash       string `gorm:"column:password_hash;size:255" json:"-"`
-	DisplayName        string `gorm:"size:128" json:"display_name"`
-	AvatarURL          string `gorm:"size:512" json:"avatar_url"`
-	RegistrationMethod string `gorm:"column:registration_method;size:32;default:password;not null" json:"registration_method"`
+	ID                 string     `gorm:"primaryKey;size:36" json:"id"`
+	TenantID           string     `gorm:"column:tenant_id;size:36;not null;default:''" json:"tenant_id"`
+	Email              string     `gorm:"uniqueIndex;size:255" json:"email"`
+	EmailVerified      bool       `gorm:"column:email_verified;default:false;not null" json:"email_verified"`
+	Phone              string     `gorm:"uniqueIndex:idx_users_phone,where:phone != '';size:20;default:''" json:"phone"`
+	PhoneVerified      bool       `gorm:"column:phone_verified;default:false;not null" json:"phone_verified"`
+	Username           string     `gorm:"uniqueIndex;size:64;not null" json:"username"`
+	PasswordHash       string     `gorm:"column:password_hash;size:255" json:"-"`
+	DisplayName        string     `gorm:"size:128" json:"display_name"`
+	AvatarURL          string     `gorm:"size:512" json:"avatar_url"`
+	RegistrationMethod string     `gorm:"column:registration_method;size:32;default:password;not null" json:"registration_method"`
 	Status             UserStatus `gorm:"size:20;default:active;not null" json:"status"`
 	Metadata           string     `gorm:"type:text" json:"metadata"`
 	LastLoginIP        string     `gorm:"column:last_login_ip;size:45" json:"last_login_ip"`
