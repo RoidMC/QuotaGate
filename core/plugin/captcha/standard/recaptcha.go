@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/roidmc/quotagate/plugin/captcha"
+	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
 )
 
 const (
@@ -103,7 +103,10 @@ func (p *RecaptchaProvider) PublicConfig() map[string]string {
 	return map[string]string{"sitekey": p.sitekey, "script": p.scriptURL}
 }
 
-// RecaptchaFactory builds per-tenant RecaptchaProvider instances.
+// RecaptchaFactory builds per-tenant RecaptchaProvider instances. The outbound
+// http client is the kexpluginsdk process-shared kexpluginsdk.SharedHTTPClient, so the
+// connection pool is reused across every provider instance rather than rebuilt
+// per request.
 type RecaptchaFactory struct{}
 
 func (f *RecaptchaFactory) Name() string    { return RecaptchaKey }
@@ -133,7 +136,7 @@ func (f *RecaptchaFactory) New(cfg captcha.ProviderConfig) (captcha.Provider, er
 		sitekey:   cfg.Extra["sitekey"],
 		endpoint:  RecaptchaEndpoint(domain),
 		scriptURL: RecaptchaScriptURL(domain),
-		client:    &http.Client{Timeout: 10 * time.Second},
+		client:    kexpluginsdk.SharedHTTPClient,
 	}, nil
 }
 

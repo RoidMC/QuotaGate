@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/roidmc/quotagate/plugin/captcha"
+	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
 )
 
 const (
@@ -67,7 +68,8 @@ func (p *TurnstileProvider) PublicConfig() map[string]string {
 
 // postSiteverify performs the standard challenge-response verification shared by
 // Turnstile and (later) reCAPTCHA: POST secret+response(+remoteip) as form data
-// and parse the {success,...} answer.
+// and parse the {success,...} answer. It uses the SDK's shared http.Client so
+// the connection pool is reused across requests.
 func postSiteverify(ctx context.Context, client *http.Client, endpoint, secret, token, remoteIP string) (bool, error) {
 	if client == nil {
 		client = &http.Client{Timeout: 10 * time.Second}
@@ -105,7 +107,10 @@ func postSiteverify(ctx context.Context, client *http.Client, endpoint, secret, 
 	return true, nil
 }
 
-// TurnstileFactory builds per-tenant TurnstileProvider instances.
+// TurnstileFactory builds per-tenant TurnstileProvider instances. The outbound
+// http client is the kexpluginsdk process-shared kexpluginsdk.SharedHTTPClient, so the
+// connection pool is reused across every provider instance rather than rebuilt
+// per request.
 type TurnstileFactory struct{}
 
 func (f *TurnstileFactory) Name() string    { return TurnstileKey }
@@ -122,13 +127,14 @@ func (f *TurnstileFactory) Capabilities() []string {
 // New builds a TurnstileProvider from per-tenant config. The secret (private
 // key) is required at Verify time; we do not reject an empty config here so
 // Validate can probe the factory with a zero-config instance at boot. The
-// sitekey (public) is carried for parity but not used server-side.
+// sitekey (public) is carried for parity but not used server-side. The http
+// client is the SDK shared instance — never allocated per request.
 func (f *TurnstileFactory) New(cfg captcha.ProviderConfig) (captcha.Provider, error) {
 	secret := cfg.Extra["secret"]
 	return &TurnstileProvider{
 		secret:  secret,
 		sitekey: cfg.Extra["sitekey"],
-		client:  &http.Client{Timeout: 10 * time.Second},
+		client:  kexpluginsdk.SharedHTTPClient,
 	}, nil
 }
 

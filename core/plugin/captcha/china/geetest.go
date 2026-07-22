@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/roidmc/quotagate/plugin/captcha"
+	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
 )
 
 const (
@@ -165,7 +166,10 @@ func hmacHex(key, msg string) string {
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
-// GeetestFactory builds per-tenant GeetestProvider instances.
+// GeetestFactory builds per-tenant GeetestProvider instances. The outbound http
+// client is the kexpluginsdk process-shared kexpluginsdk.SharedHTTPClient, so the
+// connection pool is reused across every provider instance rather than rebuilt
+// per request.
 type GeetestFactory struct{}
 
 func (f *GeetestFactory) Name() string    { return GeetestKey }
@@ -182,14 +186,15 @@ func (f *GeetestFactory) Capabilities() []string {
 // New builds a GeetestProvider from per-tenant config. captcha_id (the public
 // "验证ID") and private_key (the "Key") are required at Verify time; we do not
 // reject an empty config here so Validate can probe the factory with a
-// zero-config instance at boot.
+// zero-config instance at boot. The http client is the SDK shared instance —
+// never allocated per request.
 func (f *GeetestFactory) New(cfg captcha.ProviderConfig) (captcha.Provider, error) {
 	id := cfg.Extra["captcha_id"]
 	key := cfg.Extra["private_key"]
 	return &GeetestProvider{
 		captchaID:  id,
 		privateKey: key,
-		client:     &http.Client{Timeout: 10 * time.Second},
+		client:     kexpluginsdk.SharedHTTPClient,
 	}, nil
 }
 
