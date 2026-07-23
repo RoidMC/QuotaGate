@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/roidmc/quotagate/internal/util/ssrf"
+	"github.com/roidmc/kex-utils/pkg/kexssrf"
 )
 
 // DispatchErrorCode classifies the type of failure that occurred during a
@@ -197,7 +197,7 @@ func WithTimeout(timeout time.Duration) DispatcherOption {
 // Use this to relax or tighten SSRF restrictions (e.g. allow loopback
 // addresses in test environments). If not provided, the default policy
 // (blocks private, loopback, and link-local IPs) is used.
-func WithSSRFPolicy(policy *ssrf.Policy) DispatcherOption {
+func WithSSRFPolicy(policy *kexssrf.Policy) DispatcherOption {
 	return func(d *Dispatcher) {
 		d.ssrfPolicy = policy
 		if d.client != nil {
@@ -234,7 +234,7 @@ type Dispatcher struct {
 	onResult        ResultHandler
 	maxRespBodySize int64
 	maxPayloadSize  int64
-	ssrfPolicy      *ssrf.Policy
+	ssrfPolicy      *kexssrf.Policy
 	defaultSecret   string
 	defaultTimeout  time.Duration
 }
@@ -248,7 +248,7 @@ type Dispatcher struct {
 //
 // Optional DispatcherOption values can be passed to customize the Dispatcher.
 func NewDispatcher(timeout time.Duration, opts ...DispatcherOption) *Dispatcher {
-	policy := ssrf.DefaultPolicy()
+	policy := kexssrf.DefaultPolicy()
 	d := &Dispatcher{
 		client:          policy.NewHTTPClient(timeout),
 		signer:          DefaultSigner,
@@ -285,7 +285,7 @@ func NewDispatcher(timeout time.Duration, opts ...DispatcherOption) *Dispatcher 
 //
 // Optional DispatcherOption values can be passed to customize the Dispatcher.
 func NewDispatcherWithSigner(timeout time.Duration, signer *Signer, opts ...DispatcherOption) *Dispatcher {
-	policy := ssrf.DefaultPolicy()
+	policy := kexssrf.DefaultPolicy()
 	d := &Dispatcher{
 		client:          policy.NewHTTPClient(timeout),
 		signer:          signer,

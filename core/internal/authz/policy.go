@@ -14,6 +14,13 @@ var defaultPolicies = [][]string{
 	{"*", "user", "PUT", "/api/my-account", "*"},
 	{"*", "user", "POST", "/api/my-account/password", "*"},
 
+	// Tenant membership bridge (multi-tenant self-service)
+	{"*", "user", "POST", "/api/switch-tenant", "*"},
+	{"*", "user", "GET", "/api/my-invitations", "*"},
+	{"*", "user", "POST", "/api/my-invitations/{id}/accept", "*"},
+	{"*", "user", "POST", "/api/my-invitations/{id}/reject", "*"},
+	{"*", "user", "POST", "/api/tenants/{tenantId}/invite", "*"},
+
 	{"*", "user", "GET", "/api/tokens", "*"},
 	{"*", "user", "POST", "/api/tokens", "*"},
 	{"*", "user", "GET", "/api/tokens/{id}", "*"},

@@ -15,10 +15,11 @@ import (
 )
 
 // fakeGitHub stands up a fake GitHub OAuth + API server. It serves:
-//   GET  /login/oauth/authorize    → 302 to redirect_url?code=fake-code&state=...
-//   POST /login/oauth/access_token → {"access_token":"fake-token","token_type":"bearer"}
-//   GET  /user                     → profile JSON
-//   GET  /user/emails              → email list JSON
+//
+//	GET  /login/oauth/authorize    → 302 to redirect_url?code=fake-code&state=...
+//	POST /login/oauth/access_token → {"access_token":"fake-token","token_type":"bearer"}
+//	GET  /user                     → profile JSON
+//	GET  /user/emails              → email list JSON
 type fakeGitHub struct {
 	t        *testing.T
 	server   *httptest.Server
@@ -92,7 +93,7 @@ func TestGitHub_BeginAuth_URL(t *testing.T) {
 	ctx := context.Background()
 
 	state := "csrf-state-123"
-	authURL, err := p.BeginAuth(ctx, state)
+	authURL, err := p.BeginAuth(ctx, state, "")
 	if err != nil {
 		t.Fatalf("BeginAuth: %v", err)
 	}
@@ -144,7 +145,7 @@ func TestGitHub_CompleteAuth_WithEmailInProfile(t *testing.T) {
 	p := newProvider(t, f.server.URL, "https://app.test/callback")
 	ctx := context.Background()
 
-	asrt, err := p.CompleteAuth(ctx, "fake-code")
+	asrt, err := p.CompleteAuth(ctx, "fake-code", "")
 	if err != nil {
 		t.Fatalf("CompleteAuth: %v", err)
 	}
@@ -192,7 +193,7 @@ func TestGitHub_CompleteAuth_EmailFallback(t *testing.T) {
 	p := newProvider(t, f.server.URL, "https://app.test/callback")
 	ctx := context.Background()
 
-	asrt, err := p.CompleteAuth(ctx, "fake-code")
+	asrt, err := p.CompleteAuth(ctx, "fake-code", "")
 	if err != nil {
 		t.Fatalf("CompleteAuth: %v", err)
 	}

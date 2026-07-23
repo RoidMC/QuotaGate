@@ -5,19 +5,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/glebarez/sqlite"
+	"github.com/roidmc/quotagate/internal/testutil/testdb"
 	"github.com/go-chi/chi/v5"
 	"github.com/roidmc/quotagate/internal/authz"
 	"github.com/roidmc/quotagate/internal/middleware"
-	"gorm.io/gorm"
 )
 
 func setupMiddlewareTestManager(t *testing.T) *authz.AuthzManager {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to open test db: %v", err)
-	}
+	db := testdb.OpenRaw(t)
 	m, err := authz.NewAuthzManager(db)
 	if err != nil {
 		t.Fatalf("failed to create manager: %v", err)

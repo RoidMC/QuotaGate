@@ -13,7 +13,7 @@ import (
 	"github.com/roidmc/quotagate/internal/model"
 	"github.com/roidmc/quotagate/internal/repository"
 	"github.com/roidmc/quotagate/internal/tenant"
-	"github.com/roidmc/quotagate/internal/util/random"
+	"github.com/roidmc/kex-utils/pkg/kexrandom"
 )
 
 func InitAuthz(db *gorm.DB, bus *event.EventBus, roleRepo *repository.RoleRepository, routeMetaRepo *repository.RouteMetaRepository) (*authz.AuthzManager, error) {
@@ -32,7 +32,7 @@ func InitAuthz(db *gorm.DB, bus *event.EventBus, roleRepo *repository.RoleReposi
 			}
 			return defs, assignments, nil
 		}
-		opts = append(opts, authz.WithEventBus(bus, random.MustUUIDString(), loader))
+		opts = append(opts, authz.WithEventBus(bus, kexrandom.MustUUIDString(), loader))
 	}
 
 	authzManager, err := authz.NewAuthzManager(db, opts...)

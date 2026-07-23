@@ -14,7 +14,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
+	"github.com/roidmc/kex-utils/pkg/kexpluginsdk"
 	"github.com/roidmc/quotagate/plugin/sso"
 )
 

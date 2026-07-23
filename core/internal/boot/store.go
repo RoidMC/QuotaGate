@@ -7,8 +7,8 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/roidmc/kex-utils/pkg/kexswiftdb"
 	"github.com/roidmc/quotagate/internal/config"
-	"github.com/roidmc/quotagate/pkg/kexswiftdb"
 )
 
 func InitStore(cfg *config.Config) (kexswiftdb.Store, error) {

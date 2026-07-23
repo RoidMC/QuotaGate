@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/roidmc/kex-utils/pkg/kexpluginsdk"
 	"github.com/roidmc/quotagate/plugin/captcha"
-	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
 )
 
 const (

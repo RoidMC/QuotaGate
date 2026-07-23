@@ -62,6 +62,11 @@ var (
 		Message: "internal server error",
 	}
 
+	ErrConflict = &ErrorResponse{
+		Code:    CodeConflict,
+		Message: "resource conflict",
+	}
+
 	// ErrServiceUnavailable indicates the server cannot fulfil the request
 	// because an internal dependency (typically the role database) is
 	// temporarily unavailable. Distinct from ErrForbidden: a 503 means

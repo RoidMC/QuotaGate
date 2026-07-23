@@ -6,7 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/roidmc/quotagate/pkg/kexswiftbus"
+	"github.com/roidmc/kex-utils/pkg/kexswiftbus"
 )
 
 type EventBus struct {

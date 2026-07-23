@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/roidmc/quotagate/internal/event"
-	"github.com/roidmc/quotagate/internal/util/ssrf"
+	"github.com/roidmc/kex-utils/pkg/kexssrf"
 )
 
-func testSSRFPolicy() *ssrf.Policy {
-	p := ssrf.DefaultPolicy()
+func testSSRFPolicy() *kexssrf.Policy {
+	p := kexssrf.DefaultPolicy()
 	p.AllowLoopback = true
 	return p
 }

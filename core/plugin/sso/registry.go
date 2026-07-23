@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
+	"github.com/roidmc/kex-utils/pkg/kexpluginsdk"
 )
 
 // Method is a provider's public descriptor, surfaced via the registry's

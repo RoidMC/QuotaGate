@@ -21,6 +21,7 @@ func Run() error {
 	if err != nil {
 		return fmt.Errorf("init database: %w", err)
 	}
+	defer StopEmbeddedDB() // no-op unless database.embedded=true
 
 	store, err := InitStore(cfg)
 	if err != nil {

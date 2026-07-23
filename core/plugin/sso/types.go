@@ -175,13 +175,33 @@ type RedirectProvider interface {
 
 	// BeginAuth returns the URL the browser should be redirected to. `state`
 	// must be persisted by the caller and verified in CompleteAuth to defeat
-	// CSRF.
-	BeginAuth(ctx context.Context, state string) (authURL string, err error)
+	// CSRF. `pkceVerifier` is the PKCE code_verifier for THIS auth request;
+	// it is empty for providers that don't use PKCE. Providers that need it
+	// embed the S256 challenge derived from it in the URL; the caller persists
+	// the verifier alongside `state` and must pass the SAME value to
+	// CompleteAuth so the provider can replay it at the token endpoint.
+	BeginAuth(ctx context.Context, state, pkceVerifier string) (authURL string, err error)
 
 	// CompleteAuth exchanges the authorization `code` for a token, fetches
 	// user info, and normalises it into an Assertion. The caller must have
-	// verified `state` already.
-	CompleteAuth(ctx context.Context, code string) (*Assertion, error)
+	// verified `state` already. `pkceVerifier` is the same value passed to
+	// BeginAuth (empty when PKCE is not used).
+	CompleteAuth(ctx context.Context, code, pkceVerifier string) (*Assertion, error)
+}
+
+// PKCECapable is an OPTIONAL capability for redirect providers that require
+// OAuth 2.0 PKCE (e.g. X/Twitter). The SSO service detects it at BeginLogin,
+// calls GenerateVerifier to mint a fresh, unguessable code_verifier for the
+// request, persists it in the OAuth state entry, and threads it through
+// BeginAuth (to build the challenge) and CompleteAuth (to replay). Providers
+// that don't implement this interface simply receive an empty pkceVerifier and
+// ignore it.
+type PKCECapable interface {
+	Provider
+
+	// GenerateVerifier returns a fresh PKCE code_verifier (43-128 chars of
+	// unreserved characters per RFC 7636) for a single auth request.
+	GenerateVerifier(ctx context.Context) (string, error)
 }
 
 // QRProvider is the capability for third-party scan-confirm QR flows.

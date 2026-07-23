@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/roidmc/quotagate/pkg/kexswiftdb"
+	"github.com/roidmc/kex-utils/pkg/kexswiftdb"
 	"github.com/roidmc/quotagate/plugin/sso"
 	"github.com/roidmc/quotagate/plugin/sso/mock"
 )
@@ -55,7 +55,7 @@ func TestRedirectMock_BeginAndComplete(t *testing.T) {
 	}
 
 	state := "state-abc"
-	url, err := rp.BeginAuth(ctx, state)
+	url, err := rp.BeginAuth(ctx, state, "")
 	if err != nil {
 		t.Fatalf("BeginAuth: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestRedirectMock_BeginAndComplete(t *testing.T) {
 	}
 	t.Logf("redirect url: %s", url)
 
-	asrt, err := rp.CompleteAuth(ctx, "code-123")
+	asrt, err := rp.CompleteAuth(ctx, "code-123", "")
 	if err != nil {
 		t.Fatalf("CompleteAuth: %v", err)
 	}

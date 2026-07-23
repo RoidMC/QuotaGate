@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/roidmc/quotagate/pkg/crypto"
+	"github.com/roidmc/kex-utils/pkg/crypto"
 )
 
 var (

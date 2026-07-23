@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/roidmc/kex-utils/pkg/kexswiftdb"
 	"github.com/roidmc/quotagate/internal/config"
-	tlsutil "github.com/roidmc/quotagate/internal/util/tls"
-	"github.com/roidmc/quotagate/pkg/kexswiftdb"
+	"github.com/roidmc/kex-utils/pkg/kextls"
 )
 
 func InitHTTPServer(cfg *config.Config, handler http.Handler) *http.Server {
@@ -33,9 +33,9 @@ func RunAndWait(srv *http.Server, cfg *config.Config, store kexswiftdb.Store) er
 			certFile := cfg.HTTP.TLS.CertFile
 			keyFile := cfg.HTTP.TLS.KeyFile
 
-			if certFile == "" || keyFile == "" || !tlsutil.FileExists(certFile) || !tlsutil.FileExists(keyFile) {
+			if certFile == "" || keyFile == "" || !kextls.FileExists(certFile) || !kextls.FileExists(keyFile) {
 				slog.Info("quotagate/boot: TLS enabled but no valid certificate found, generating self-signed certificate...")
-				cert, err := tlsutil.GenerateSelfSignedCert("./certs", cfg.Server.Name)
+				cert, err := kextls.GenerateSelfSignedCert("./certs", cfg.Server.Name)
 				if err != nil {
 					slog.Error("quotagate/boot: failed to generate self-signed certificate", "error", err)
 					return

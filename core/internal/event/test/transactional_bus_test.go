@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/glebarez/sqlite"
+	"github.com/roidmc/quotagate/internal/testutil/testdb"
 	"github.com/roidmc/quotagate/internal/event"
 	"github.com/roidmc/quotagate/internal/model"
 	"github.com/roidmc/quotagate/internal/repository"
@@ -15,10 +15,7 @@ import (
 
 func setupTransactionalBusTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to open test db: %v", err)
-	}
+	db := testdb.OpenRaw(t)
 	sqlDB, err := db.DB()
 	if err != nil {
 		t.Fatalf("failed to get sql db: %v", err)

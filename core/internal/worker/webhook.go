@@ -8,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/roidmc/kex-utils/pkg/kexrandom"
 	"github.com/roidmc/quotagate/internal/event"
 	"github.com/roidmc/quotagate/internal/model"
 	"github.com/roidmc/quotagate/internal/repository"
-	kexrandom "github.com/roidmc/quotagate/internal/util/random"
 )
 
 const (
@@ -122,7 +122,7 @@ func NewWebhookWorker(repo *repository.WebhookRepository, dispatcher *event.Disp
 // claims one pending outbox entry at a time and dispatches it independently,
 // so a slow endpoint cannot block the whole worker pool.
 //
-// Start must be called at most once. Calling Start twice panics — this
+// Start must be called at most once. Calling Start twice panics �?this
 // indicates a caller bug (e.g. starting the same worker in multiple places).
 // To restart after Stop, create a new WebhookWorker.
 func (w *WebhookWorker) Start() {

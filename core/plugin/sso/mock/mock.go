@@ -2,7 +2,7 @@
 // without hitting real third-party APIs. The redirect mock returns a
 // GitHub-shaped payload; the qr mock returns a WeChat MiniProgram-shaped
 // payload. The field mappings below are *examples* of how a real provider
-// would map its raw response into sso.Assertion — they are not a contract.
+// would map its raw response into sso.Assertion �?they are not a contract.
 //
 // Like real providers, mocks register a ProviderFactory in init() and
 // produce per-request instances via New(cfg). The cfg carries the store
@@ -16,8 +16,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/roidmc/quotagate/internal/util/random"
-	"github.com/roidmc/quotagate/pkg/kexswiftdb"
+	"github.com/roidmc/kex-utils/pkg/kexrandom"
+	"github.com/roidmc/kex-utils/pkg/kexswiftdb"
 	"github.com/roidmc/quotagate/plugin/sso"
 )
 
@@ -49,19 +49,19 @@ const MockExtraTTL = "mock_ttl"
 // reproduces its shape so anything consuming GitHub-style responses can be
 // tested against realistic data.
 type githubUserInfo struct {
-	Login      string `json:"login"`
-	ID         int    `json:"id"`
-	NodeID     string `json:"node_id"`
-	AvatarURL  string `json:"avatar_url"`
-	HTMLURL    string `json:"html_url"`
-	Name       string `json:"name"`
-	Company    string `json:"company"`
-	Blog       string `json:"blog"`
-	Location   string `json:"location"`
-	Email      string `json:"email"`
-	Bio        string `json:"bio"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
+	Login     string `json:"login"`
+	ID        int    `json:"id"`
+	NodeID    string `json:"node_id"`
+	AvatarURL string `json:"avatar_url"`
+	HTMLURL   string `json:"html_url"`
+	Name      string `json:"name"`
+	Company   string `json:"company"`
+	Blog      string `json:"blog"`
+	Location  string `json:"location"`
+	Email     string `json:"email"`
+	Bio       string `json:"bio"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // ---- WeChat MiniProgram-shaped raw response (example mapping source) ----
@@ -98,19 +98,19 @@ type redirectInstance struct {
 	baseURL string
 }
 
-func (m *redirectInstance) Name() string    { return "mock-github" }
-func (m *redirectInstance) Flow() sso.Flow  { return sso.FlowRedirect }
+func (m *redirectInstance) Name() string   { return "mock-github" }
+func (m *redirectInstance) Flow() sso.Flow { return sso.FlowRedirect }
 
-func (m *redirectInstance) BeginAuth(ctx context.Context, state string) (string, error) {
+func (m *redirectInstance) BeginAuth(ctx context.Context, state, _ string) (string, error) {
 	if err := kexswiftdb.SetJSON(ctx, m.store, nsMockRedirect, state, struct {
 		CreatedAt time.Time `json:"created_at"`
 	}{time.Now()}, defaultStateTTL); err != nil {
-		// Infrastructure failure — not a state lifecycle error, so wrap
+		// Infrastructure failure �?not a state lifecycle error, so wrap
 		// ErrProviderUnavailable rather than ErrStateNotFound (the latter
 		// is for "state presented but not recognised").
 		return "", fmt.Errorf("sso/mock: store state: %w: %v", sso.ErrProviderUnavailable, err)
 	}
-	// Build the URL with proper escaping — state is a UUID in normal use,
+	// Build the URL with proper escaping �?state is a UUID in normal use,
 	// but robust URL construction avoids surprises if it ever carries other
 	// characters and keeps the mock honest as a reference implementation.
 	u, err := url.Parse(m.baseURL)
@@ -124,7 +124,7 @@ func (m *redirectInstance) BeginAuth(ctx context.Context, state string) (string,
 	return u.String(), nil
 }
 
-func (m *redirectInstance) CompleteAuth(ctx context.Context, code string) (*sso.Assertion, error) {
+func (m *redirectInstance) CompleteAuth(ctx context.Context, code, _ string) (*sso.Assertion, error) {
 	// A real provider would exchange `code` for a token then call /user.
 	// The mock synthesises a GitHub-shaped response derived from `code`.
 	gh := githubUserInfo{
@@ -178,7 +178,7 @@ func (m *qrInstance) Name() string   { return "mock-wechat-mp" }
 func (m *qrInstance) Flow() sso.Flow { return sso.FlowQR }
 
 func (m *qrInstance) Generate(ctx context.Context) (ticket, qrData string, err error) {
-	ticket = random.MustUUIDString()
+	ticket = kexrandom.MustUUIDString()
 	entry := qrTicketEntry{
 		Status:    sso.StatusPending,
 		ExpiresAt: time.Now().Add(m.ttl).Unix(),
@@ -233,7 +233,7 @@ func (m *qrInstance) Poll(ctx context.Context, ticket string) (status string, as
 	if err != nil {
 		if errors.Is(err, kexswiftdb.ErrKeyNotFound) {
 			// Missing ticket is a business-level "expired/unknown" status,
-			// not an internal error — the polling client just sees Expired.
+			// not an internal error �?the polling client just sees Expired.
 			return sso.StatusExpired, nil, nil
 		}
 		// Real store failure (badger IO, etc.). Surface as provider-side
@@ -273,7 +273,7 @@ func (m *qrInstance) sessionToAssertion(s *weChatMiniProgramSession) *sso.Assert
 // ---- factory self-registration ----
 //
 // Real provider packages (standard/github, china/wechat_mp, ...) register a
-// stateless factory in their own init() — they don't need infrastructure
+// stateless factory in their own init() �?they don't need infrastructure
 // injected, they call the third-party API with cfg.ClientID/ClientSecret.
 //
 // Mocks are different: they need a kexswiftdb.Store to persist state, which

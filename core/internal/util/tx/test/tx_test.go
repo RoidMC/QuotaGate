@@ -4,17 +4,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/glebarez/sqlite"
+	"github.com/roidmc/quotagate/internal/testutil/testdb"
 	"github.com/roidmc/quotagate/internal/util/tx"
 	"gorm.io/gorm"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to open test db: %v", err)
-	}
+	db := testdb.OpenRaw(t)
 	return db
 }
 

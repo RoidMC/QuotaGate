@@ -13,7 +13,7 @@ import (
 	"reflect"
 	"sort"
 
-	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
+	"github.com/roidmc/kex-utils/pkg/kexpluginsdk"
 )
 
 // Provider is the minimal captcha backend contract. Concrete providers extend

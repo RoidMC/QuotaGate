@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"sort"
 
-	"github.com/roidmc/quotagate/pkg/kexpluginsdk"
+	"github.com/roidmc/kex-utils/pkg/kexpluginsdk"
 )
 
 type Authenticator interface {

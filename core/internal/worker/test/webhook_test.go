@@ -10,22 +10,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/glebarez/sqlite"
+	"github.com/roidmc/kex-utils/pkg/kexrandom"
+	"github.com/roidmc/kex-utils/pkg/kexssrf"
 	"github.com/roidmc/quotagate/internal/event"
 	"github.com/roidmc/quotagate/internal/model"
 	"github.com/roidmc/quotagate/internal/repository"
-	"github.com/roidmc/quotagate/internal/util/random"
-	"github.com/roidmc/quotagate/internal/util/ssrf"
+	"github.com/roidmc/quotagate/internal/testutil/testdb"
 	"github.com/roidmc/quotagate/internal/worker"
 	"gorm.io/gorm"
 )
 
 func setupWorkerTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to open test db: %v", err)
-	}
+	db := testdb.OpenRaw(t)
 	sqlDB, err := db.DB()
 	if err != nil {
 		t.Fatalf("failed to get sql db: %v", err)
@@ -39,8 +36,8 @@ func setupWorkerTestDB(t *testing.T) *gorm.DB {
 	return db
 }
 
-func testSSRFPolicy() *ssrf.Policy {
-	p := ssrf.DefaultPolicy()
+func testSSRFPolicy() *kexssrf.Policy {
+	p := kexssrf.DefaultPolicy()
 	p.AllowLoopback = true
 	return p
 }
@@ -50,18 +47,17 @@ func newTestDispatcher(t *testing.T) *event.Dispatcher {
 	return event.NewDispatcher(5*time.Second, event.WithSSRFPolicy(testSSRFPolicy()))
 }
 
-func waitForProcessed(t *testing.T, w *worker.WebhookWorker, want int64, timeout time.Duration) {
-	t.Helper()
-	deadline := time.Now().Add(timeout)
-	for time.Now().Before(deadline) {
-		if w.Metrics().ProcessedCount >= want {
-			return
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	t.Fatalf("timeout waiting for processed count >= %d, got %d", want, w.Metrics().ProcessedCount)
-}
-
+// waitForOutboxStatus is the canonical "did processing finish" signal for these
+// tests. Wait on the durable DB outbox status, never on w.Metrics():
+//
+//   - The worker increments ProcessedCount at the *start* of processEntry, so a
+//     metrics-based waiter would return the moment an entry is claimed — before
+//     the HTTP dispatch even happens. It cannot tell Completed from Dead either.
+//   - SuccessCount/FailureCount are incremented *after* the DB terminal status is
+//     persisted (see webhook.go processEntry). Therefore any assertion on
+//     w.Metrics() MUST follow w.Stop(), which drains in-flight processEntry calls
+//     and guarantees the counters are settled. Never read Metrics() between this
+//     waiter and Stop().
 func waitForOutboxStatus(t *testing.T, db *gorm.DB, id string, want string, timeout time.Duration) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)
@@ -114,7 +110,7 @@ func TestWebhookWorkerDispatchesPendingEntry(t *testing.T) {
 	payload, _ := json.Marshal(evt)
 
 	entry := model.WebhookOutbox{
-		ID:             random.MustUUIDString(),
+		ID:             kexrandom.MustUUIDString(),
 		EventType:      "test",
 		EventID:        "evt-1",
 		TenantID:       "tenant-1",
@@ -165,7 +161,7 @@ func TestWebhookWorkerMarksEntryDeadAfterMaxAttempts(t *testing.T) {
 	payload, _ := json.Marshal(evt)
 
 	entry := model.WebhookOutbox{
-		ID:             random.MustUUIDString(),
+		ID:             kexrandom.MustUUIDString(),
 		EventType:      "test",
 		EventID:        "evt-fail",
 		TenantID:       "tenant-1",
@@ -217,7 +213,7 @@ func TestWebhookWorkerRetriesUntilSuccess(t *testing.T) {
 	payload, _ := json.Marshal(evt)
 
 	entry := model.WebhookOutbox{
-		ID:             random.MustUUIDString(),
+		ID:             kexrandom.MustUUIDString(),
 		EventType:      "test",
 		EventID:        "evt-retry",
 		TenantID:       "tenant-1",
@@ -265,7 +261,7 @@ func TestWebhookWorkerDispatchesMultipleEntries(t *testing.T) {
 		evt := event.Event{ID: fmt.Sprintf("evt-batch-%d", i), Type: "test"}
 		payload, _ := json.Marshal(evt)
 		entry := model.WebhookOutbox{
-			ID:             random.MustUUIDString(),
+			ID:             kexrandom.MustUUIDString(),
 			EventType:      "test",
 			EventID:        evt.ID,
 			TenantID:       "tenant-1",
@@ -318,7 +314,7 @@ func TestWebhookWorkerCreatesDeliveryLog(t *testing.T) {
 	payload, _ := json.Marshal(evt)
 
 	entry := model.WebhookOutbox{
-		ID:             random.MustUUIDString(),
+		ID:             kexrandom.MustUUIDString(),
 		EventType:      "test",
 		EventID:        "evt-log",
 		TenantID:       "tenant-1",
@@ -367,7 +363,7 @@ func TestWebhookWorkerSignsPayloadWithSecret(t *testing.T) {
 	payload, _ := json.Marshal(evt)
 
 	entry := model.WebhookOutbox{
-		ID:             random.MustUUIDString(),
+		ID:             kexrandom.MustUUIDString(),
 		EventType:      "test",
 		EventID:        "evt-secret",
 		TenantID:       "tenant-1",
@@ -407,7 +403,7 @@ func TestWebhookWorkerInvalidPayloadMarkedDead(t *testing.T) {
 	w.Start()
 
 	entry := model.WebhookOutbox{
-		ID:             random.MustUUIDString(),
+		ID:             kexrandom.MustUUIDString(),
 		EventType:      "test",
 		EventID:        "evt-bad",
 		TenantID:       "tenant-1",
@@ -541,7 +537,7 @@ func TestWebhookWorkerReclaimsStaleProcessing(t *testing.T) {
 	payload, _ := json.Marshal(evt)
 
 	entry := model.WebhookOutbox{
-		ID:             random.MustUUIDString(),
+		ID:             kexrandom.MustUUIDString(),
 		EventType:      "test",
 		EventID:        "evt-stale",
 		TenantID:       "tenant-1",
@@ -605,7 +601,7 @@ func TestReplayDeadEntry(t *testing.T) {
 	repo := repository.NewWebhookRepository(db)
 
 	entry := model.WebhookOutbox{
-		ID:             random.MustUUIDString(),
+		ID:             kexrandom.MustUUIDString(),
 		EventType:      "test",
 		EventID:        "evt-replay",
 		TenantID:       "tenant-1",
@@ -650,7 +646,7 @@ func TestReplayDeadBatch(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		entry := model.WebhookOutbox{
-			ID:             random.MustUUIDString(),
+			ID:             kexrandom.MustUUIDString(),
 			EventType:      "test",
 			EventID:        fmt.Sprintf("evt-batch-replay-%d", i),
 			TenantID:       "tenant-1",

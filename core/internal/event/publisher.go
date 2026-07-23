@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/roidmc/quotagate/internal/util/tx"
-	"github.com/roidmc/quotagate/pkg/kexswiftbus"
+	"github.com/roidmc/kex-utils/pkg/kexswiftbus"
 	"gorm.io/gorm"
 )
 

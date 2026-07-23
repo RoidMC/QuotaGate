@@ -1,11 +1,13 @@
 package relay
 
-func init() {
-	defaultRegistry = NewRegistry()
-}
+// defaultRegistry is populated by init()s of real provider packages
+// (standard, china, ...). A var initializer is used so the registry exists
+// before any provider init() runs and registers into it.
+var defaultRegistry = NewRegistry()
 
-var defaultRegistry *Registry
-
+// DefaultRegistry returns the registry populated by real provider init()s.
+// Importing a provider package (e.g. _ ".../plugin/relay/standard") causes its
+// factory to self-register.
 func DefaultRegistry() *Registry {
 	return defaultRegistry
 }

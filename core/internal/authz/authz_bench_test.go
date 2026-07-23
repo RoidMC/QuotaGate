@@ -9,7 +9,7 @@ import (
 	casbinmodel "github.com/casbin/casbin/v3/model"
 	"github.com/casbin/casbin/v3/util"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
-	"github.com/glebarez/sqlite"
+	"github.com/roidmc/quotagate/internal/testutil/testdb"
 	"github.com/roidmc/quotagate/internal/authz"
 	"github.com/roidmc/quotagate/internal/model"
 	"gorm.io/gorm"
@@ -17,10 +17,7 @@ import (
 
 func setupBenchDB(b *testing.B) *gorm.DB {
 	b.Helper()
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		b.Fatalf("failed to open bench db: %v", err)
-	}
+	db := testdb.OpenRaw(b)
 	return db
 }
 

@@ -11,7 +11,7 @@ import (
 
 	"github.com/roidmc/quotagate/internal/event"
 	"github.com/roidmc/quotagate/internal/types"
-	"github.com/roidmc/quotagate/pkg/kexswiftbus"
+	"github.com/roidmc/kex-utils/pkg/kexswiftbus"
 )
 
 const (
